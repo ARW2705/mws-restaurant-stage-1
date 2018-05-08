@@ -1,0 +1,104 @@
+Restaurant Reviews: Stage 1 Criteria and Game Plan
+
+
+Design aspects to be added (from review rubric):
+
+  Responsive
+    - all content must be responsive
+    - content should make use of screen real estate
+    - image title/text renders next to image in all viewport sizes
+    - images are sized appropriately to viewport and don't crowd or overlap other content
+    - main page restaurants and images displayed in all viewports
+    - detail page includes a map, hours, and reviews in all viewports
+
+  Accessible
+    - content related images include appropriate alt text
+    - focus is appropriately managed to tab to important elements of page and modals
+      lock focus
+    - elements use semantic elements where able and use aria roles when not
+
+  Offline-first
+    - when available, site uses a service worker to cache responses
+    - visited pages are available with no network access
+
+
+Notes on initial website:
+
+  Display-
+    1. text and restaurant cards on main page too narrow
+    2. large, unused white space to the right of cards
+    3. cards not responsive, tiny on small screens becoming overflow with edge of screen
+    4. main page card layout disjointed - adjust spacing of elements
+    5. map filters section disjointed and ugly
+    6. review cards difficult to read - style and accentuation needed for clarity
+    7. image natural dimensions are huge
+
+  Accessibility-
+    1. results from audit:
+      - elements have no alt
+      - frames missing title
+      - drop downs missing labels
+      - background/foreground contrast too low
+      - html missing lang attr
+    2. testing with reader:
+      - nav link doesn't state where it navigates to
+      - map lists all query results but no context
+      - next tab is blank?
+      - combo boxes missing labels
+      - should result number be stated?
+      - list needs label
+      - list tabbing skips card info and goes straight to details button
+      - list items needs label
+      - navigating to review page reads a lot of info at once and starts partway
+        through the page
+      - doesn't tab to restaurant Info
+      - doesn't tab to reviews
+
+  Offline-first-
+    1. no service worker
+    2. no caching in place
+
+
+Ideas for changes:
+  Responsive-
+    1. Basic layout/setup
+      - set viewport
+      - set charset
+      - normalize css
+      - go flexbox
+    2. Deeper layout ideas
+      - width breakpoints
+        mobile/small - up to 600
+          - main page cards vertically stacked 1 per row
+        medium - 600 to 900
+          - main page cards 2 per row
+        large - 900+
+          - main page cards add margin to center
+      - adjust background color?
+      - add box shadow to make cards pop and adjust component spacing
+      - review cards
+        - style cards to make them stand out and help separate the different
+          info (name, date, rating, body)
+      - review should be 1 item per row on smaller screens, 2 on larger?
+    3. Images
+      - create different sized images to match viewport width, currently they're
+        800x600 and won't need that size/best size for different sizes
+
+  Accessibility-
+    1. Contrast
+      - change text colors/backgrounds to improve contrast
+    2. Focus
+      - change interactive elements to highlight when in focus
+      - fix focus points and order
+    3. Images
+      - add alt text
+    4. Semantics
+      - adjust html tags to semantic tags where available
+      - set meta lang
+    5. Reader
+      - after semantics fixed, add appropriate aria
+
+  Offline-first-
+    1. add a service worker and register it properly to start
+    2. need to cache assets - will likely have different image size categories,
+      should they all be in the same cache or different?
