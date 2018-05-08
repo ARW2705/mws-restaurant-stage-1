@@ -60,7 +60,7 @@ nav h1 {
 }
 nav h1 a {
   color: #fff;
-  font-size: 14pt;
+  font-size: 1.1em;
   font-weight: 200;
   letter-spacing: 10px;
   text-transform: uppercase;
@@ -106,8 +106,8 @@ nav h1 a {
 /* ====================== Restaurant Filtering ====================== */
 .filter-options {
   width: 100%;
-  height: 50px;
-  background-color: #3397DB;
+  height: 75px;
+  background-color: #252831;
   align-items: center;
 }
 .filter-options h2 {
@@ -115,7 +115,8 @@ nav h1 a {
   font-size: 1rem;
   font-weight: normal;
   line-height: 1;
-  margin: 0 20px;
+  margin: 0 2%;
+	padding: 5px 0 0 0;
 }
 .filter-options select {
   background-color: white;
@@ -124,14 +125,15 @@ nav h1 a {
   font-size: 11pt;
   height: 35px;
   letter-spacing: 0;
-  margin: 10px;
+  margin: 7px;
   padding: 0 10px;
-  width: 200px;
+  width: calc((100% / 2) - 16px);
 }
 
 /* ====================== Restaurant Listing ====================== */
 #restaurants-list {
-  background-color: #f3f3f3;
+  /* background-color: #f3f3f3; */
+	background-color: #dbdbdb;
   list-style: outside none none;
   margin: 0;
   padding: 30px 15px 60px;
@@ -288,26 +290,31 @@ nav h1 a {
 }
 
 /* ======================== Media Queries ======================== */
-@media screen and (min-width: 500px) and (max-width: 700px) {
+@media screen and (min-width: 480px) and (max-width: 700px) {
 	#restaurants-list li {
 		margin-left: 10%;
 		margin-right: 10%;
 	}
 }
 
-@media screen and (min-width: 700px) and (max-width: 1024px) {
-	#restaurants-list {
-		padding: 30px 0 60px 0;
-	}
+@media screen and (min-width: 700px) and (max-width: 850px) {
 	#restaurants-list li {
-		width: calc((100% / 2) - 15px);
-		margin: 2% 7px 2% 7px;
+		width: calc((100% / 2) - 2%);
+		margin: 2% 1%;
+	}
+}
+
+@media screen and (min-width: 850px) and (max-width: 1024px){
+	#restaurants-list li {
+		width: calc((100% / 2) - 6%);
+		margin-left: 3%;
+		margin-right: 3%;
 	}
 }
 
 @media screen and (min-width: 1024px) {
 	#restaurants-list li {
-		width: calc((100% / 3) - 10px);
-		margin: 2% 5px 2% 5px;
+		width: calc((100% / 3) - 2%);
+		margin: 2% 1%;
 	}
 }
