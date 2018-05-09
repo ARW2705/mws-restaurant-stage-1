@@ -140,7 +140,16 @@ createRestaurantHTML = (restaurant) => {
 
   const image = document.createElement('img');
   image.className = 'restaurant-img';
-  image.src = DBHelper.imageUrlForRestaurant(restaurant);
+  const imageUrl = DBHelper.imageUrlForRestaurant(restaurant);
+  const imageFileName = imageUrl.substring(4);
+  image.src = imageUrl;
+  // card images are for style only and do not add useful information to the card
+  image.alt = "";
+  // fetch smaller image files on smaller, 1x screens
+  image.srcset =
+    `img/sizes/sm-${imageFileName} 480w,
+    img/${imageFileName} 1500w,
+    img/${imageFileName} 2x`;
   li.append(image);
 
   const name = document.createElement('h1');
