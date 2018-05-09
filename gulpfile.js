@@ -1,31 +1,63 @@
 'use strict';
 
 const gulp = require('gulp');
-const concat = require('gulp-concat');
+const rename = require('gulp-rename');
+const imageResize = require('gulp-image-resize');
 
 const paths = {
   styles: {
     src: 'css/**/*.css',
     dest: 'assets/styles/'
   },
-  scripts: {
-    src: 'js/**/*.js',
-    dest: 'assets/scripts/'
+  images: {
+    src: 'img/**/*',
+    dest: {
+      small: 'assets/images/sm/',
+      medium: 'assets/images/md/',
+      large: 'assets/images/lg/',
+      x2: 'assets/images/x2/'
+    }
   }
 };
 
-gulp.task('concatScripts', () => {
-  console.log('Running gulp-concat');
-  gulp
-    .src([
-      'js/dbhelper.js',
-      'js/restaurant_info.js',
-      'js/main.js'
-    ])
-    .pipe(concat('app.js'))
-    .pipe(gulp.dest('js'));
+gulp.task('minifyImages', () => {
+  console.log('Running gulp-imagemin');
+  const imagesToResize = gulp.src(paths.images.src);
+  imagesToResize
+    .pipe(imageResize({
+      percentage: 30,
+      imageMagick: true
+    }))
+    .pipe(rename(function(path) { path.basename += '-sm'; }))
+    .pipe(gulp.dest(paths.images.dest.small));
+
+  imagesToResize
+    .pipe(imageResize({
+      percentage: 40,
+      imageMagick: true
+    }))
+    .pipe(rename(path => path.basename += '-md'))
+    .pipe(gulp.dest(paths.images.dest.medium));
+
+  imagesToResize
+    .pipe(imageResize({
+      percentage: 50,
+      imageMagick: true
+    }))
+    .pipe(rename(path => path.basename += '-lg'))
+    .pipe(gulp.dest(paths.images.dest.large));
+
+    imagesToResize
+      .pipe(imageResize({
+        percentage: 100,
+        imageMagick: true
+      }))
+      .pipe(rename(path => path.basename += '-x2'))
+      .pipe(gulp.dest(paths.images.dest.x2));
 });
 
-gulp.task('default', ['concatScripts'], () => {
-  console.log('Running gulp default');
+const gulpTaskList = ['minifyImages'];
+
+gulp.task('default', gulpTaskList, () => {
+  console.log('Gulp tasks completed');
 });
