@@ -3,57 +3,31 @@
 const gulp = require('gulp');
 const rename = require('gulp-rename');
 const imageResize = require('gulp-image-resize');
+const clean = require('gulp-clean');
 
 const paths = {
-  styles: {
-    src: 'css/**/*.css',
-    dest: 'assets/styles/'
-  },
   images: {
-    src: 'img/**/*',
-    dest: {
-      small: 'assets/images/sm/',
-      medium: 'assets/images/md/',
-      large: 'assets/images/lg/',
-      x2: 'assets/images/x2/'
-    }
+    src: 'img/*',
+    dest: 'img/sizes/'
   }
 };
 
-gulp.task('minifyImages', () => {
+gulp.task('clean-images', () => {
+  console.log('Cleaning old files');
+  return gulp.src('img/sizes/**/*', {read: false})
+    .pipe(clean());
+});
+
+// TODO: prevent gulp from adding uneccessary folders
+gulp.task('minifyImages', ['clean-images'], () => {
   console.log('Running gulp-imagemin');
-  const imagesToResize = gulp.src(paths.images.src);
-  imagesToResize
+  gulp.src(paths.images.src)
     .pipe(imageResize({
-      percentage: 30,
+      percentage: 60,
       imageMagick: true
     }))
-    .pipe(rename(function(path) { path.basename += '-sm'; }))
-    .pipe(gulp.dest(paths.images.dest.small));
-
-  imagesToResize
-    .pipe(imageResize({
-      percentage: 40,
-      imageMagick: true
-    }))
-    .pipe(rename(path => path.basename += '-md'))
-    .pipe(gulp.dest(paths.images.dest.medium));
-
-  imagesToResize
-    .pipe(imageResize({
-      percentage: 50,
-      imageMagick: true
-    }))
-    .pipe(rename(path => path.basename += '-lg'))
-    .pipe(gulp.dest(paths.images.dest.large));
-
-    imagesToResize
-      .pipe(imageResize({
-        percentage: 100,
-        imageMagick: true
-      }))
-      .pipe(rename(path => path.basename += '-x2'))
-      .pipe(gulp.dest(paths.images.dest.x2));
+    .pipe(rename(path => path.basename = 'sm-' + path.basename))
+    .pipe(gulp.dest(paths.images.dest));
 });
 
 const gulpTaskList = ['minifyImages'];
