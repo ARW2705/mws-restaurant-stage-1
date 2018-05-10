@@ -53,11 +53,19 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
   name.innerHTML = restaurant.name;
 
   const address = document.getElementById('restaurant-address');
-  address.innerHTML = restaurant.address;
+  const index = restaurant.address.indexOf(',') + 1;
+  const formattedAddress = [restaurant.address.slice(0, index), '<br>', restaurant.address.slice(index)].join('');
+  address.innerHTML = formattedAddress;
 
   const image = document.getElementById('restaurant-img');
   image.className = 'restaurant-img'
-  image.src = DBHelper.imageUrlForRestaurant(restaurant);
+  const imageUrl = DBHelper.imageUrlForRestaurant(restaurant);
+  const imageFileName = imageUrl.substring(4);
+  image.src = imageUrl;
+  // fetch smaller image files on smaller, 1x screens
+  image.srcset = `img/sizes/sm-${imageFileName} 480w,
+                  img/${imageFileName} 1500w,
+                  img/${imageFileName} 2x`;
 
   const cuisine = document.getElementById('restaurant-cuisine');
   cuisine.innerHTML = restaurant.cuisine_type;
@@ -80,10 +88,18 @@ fillRestaurantHoursHTML = (operatingHours = self.restaurant.operating_hours) => 
 
     const day = document.createElement('td');
     day.innerHTML = key;
+    day.setAttribute("valign", "top");
     row.appendChild(day);
 
     const time = document.createElement('td');
-    time.innerHTML = operatingHours[key];
+    const _hours = operatingHours[key];
+    const index = _hours.indexOf(',') + 1;
+    if (index > 0) {
+      const formattedTime = [_hours.slice(0, index), '<br>', _hours.slice(index)].join('');
+      time.innerHTML = formattedTime;
+    } else {
+      time.innerHTML = operatingHours[key];
+    }
     row.appendChild(time);
 
     hours.appendChild(row);
@@ -117,21 +133,31 @@ fillReviewsHTML = (reviews = self.restaurant.reviews) => {
  */
 createReviewHTML = (review) => {
   const li = document.createElement('li');
+
+  const cardHeader = document.createElement('div');
+  cardHeader.className = 'review-card-header';
+  const cardBody = document.createElement('div');
+  cardBody.className = 'review-card-body';
+
   const name = document.createElement('p');
   name.innerHTML = review.name;
-  li.appendChild(name);
+  cardHeader.appendChild(name);
 
-  const date = document.createElement('p');
+  const date = document.createElement('time');
   date.innerHTML = review.date;
-  li.appendChild(date);
+  cardHeader.appendChild(date);
+
+  li.appendChild(cardHeader);
 
   const rating = document.createElement('p');
   rating.innerHTML = `Rating: ${review.rating}`;
-  li.appendChild(rating);
+  cardBody.appendChild(rating);
 
-  const comments = document.createElement('p');
+  const comments = document.createElement('article');
   comments.innerHTML = review.comments;
-  li.appendChild(comments);
+  cardBody.appendChild(comments);
+
+  li.appendChild(cardBody);
 
   return li;
 }
