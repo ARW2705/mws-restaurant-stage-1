@@ -42,7 +42,7 @@ article, aside, canvas, details, figcaption, figure, footer, header, hgroup, men
   background-color: #eee;
   min-height: 100%;
 }
-#footer {
+footer {
   background-color: #444;
   color: #dedede;
   font-size: 8pt;
@@ -219,7 +219,7 @@ nav h1 a {
   height: 100%;
   width: 100%;
 }
-.inside #footer {
+.inside footer {
   bottom: -125px;
   position: relative;
 }
