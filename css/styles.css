@@ -25,6 +25,7 @@ a {
 	text-decoration: none;
 }
 a:hover, a:focus {
+	font-size: 1.3rem !important;
 	color: #3397db;
 	text-decoration: none;
 }
@@ -68,6 +69,10 @@ nav h1 a {
   font-weight: 200;
   letter-spacing: 3px;
   text-transform: uppercase;
+}
+nav h1 a:focus, footer a:focus {
+	color: #fff;
+	border: 4px solid #ffb200;
 }
 #breadcrumb {
     padding: 10px 20px 10px;
@@ -133,6 +138,9 @@ nav h1 a {
   padding: 0 10px;
   width: calc((100% / 2) - 1.2em);
 }
+.filter-options select:focus {
+	border: 4px solid #ffb200;
+}
 
 /* ====================== Restaurant Listing ====================== */
 #restaurants-list {
@@ -195,6 +203,11 @@ nav h1 a {
   text-align: center;
   text-decoration: none;
   text-transform: uppercase;
+}
+#restaurants-list li a:focus {
+	color: black;
+	border: 4px solid black;
+	text-decoration: none;
 }
 
 /* ====================== Restaurant Details ====================== */
