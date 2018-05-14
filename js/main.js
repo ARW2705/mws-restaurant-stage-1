@@ -31,10 +31,12 @@ fetchNeighborhoods = () => {
  */
 fillNeighborhoodsHTML = (neighborhoods = self.neighborhoods) => {
   const select = document.getElementById('neighborhoods-select');
-  neighborhoods.forEach(neighborhood => {
+  neighborhoods.forEach((neighborhood, i) => {
     const option = document.createElement('option');
     option.innerHTML = neighborhood;
     option.value = neighborhood;
+    option.id = `n${i + 1}`;
+    option.setAttribute('role', 'option');
     select.append(option);
   });
 }
@@ -59,10 +61,12 @@ fetchCuisines = () => {
 fillCuisinesHTML = (cuisines = self.cuisines) => {
   const select = document.getElementById('cuisines-select');
 
-  cuisines.forEach(cuisine => {
+  cuisines.forEach((cuisine, i) => {
     const option = document.createElement('option');
     option.innerHTML = cuisine;
     option.value = cuisine;
+    option.id = `c${i + 1}`;
+    option.setAttribute('role', 'option');
     select.append(option);
   });
 }
@@ -93,8 +97,21 @@ updateRestaurants = () => {
   const cIndex = cSelect.selectedIndex;
   const nIndex = nSelect.selectedIndex;
 
-  const cuisine = cSelect[cIndex].value;
-  const neighborhood = nSelect[nIndex].value;
+  const cOption = cSelect[cIndex];
+  const nOption = nSelect[nIndex];
+
+  const cuisine = cOption.value;
+  const neighborhood = nOption.value;
+
+  // remove aria-selected from old cuisine selection and add it to the new selection
+  const oldCOption = cSelect.querySelector('[aria-selected="true"]');
+  oldCOption.removeAttribute('aria-selected');
+  cOption.setAttribute('aria-selected', 'true');
+
+  // remove aria-selected from old neighborhood selection and add it to the new selection
+  const oldNOption = nSelect.querySelector('[aria-selected="true"]');
+  oldNOption.removeAttribute('aria-selected');
+  nOption.setAttribute('aria-selected', 'true');
 
   DBHelper.fetchRestaurantByCuisineAndNeighborhood(cuisine, neighborhood, (error, restaurants) => {
     if (error) { // Got an error!
@@ -166,6 +183,7 @@ createRestaurantHTML = (restaurant) => {
   const more = document.createElement('a');
   more.innerHTML = 'View Details';
   more.href = DBHelper.urlForRestaurant(restaurant);
+  more.setAttribute('aria-label', `view-details for the restaurant, ${restaurant.name}`);
   li.append(more)
 
   return li
