@@ -81,6 +81,9 @@ self.addEventListener('activate', event => {
   );
 });
 
+/**
+ * Handle service worker error event
+ */
 self.addEventListener('error', event => {
   console.log('SW error', event);
 });
