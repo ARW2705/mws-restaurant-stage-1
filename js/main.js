@@ -163,9 +163,12 @@ createRestaurantHTML = (restaurant) => {
   // card images are for style only and do not add useful information to the card
   image.alt = "";
   // fetch smaller image files on smaller, 1x screens
-  image.srcset = `img/sizes/sm-${imageFileName} 480w,
-                  img/${imageFileName} 1500w,
-                  img/${imageFileName} 2x`;
+  image.srcset = `img/sizes/sm-${imageFileName} 360w,
+                  img/sizes/md-${imageFileName} 480w,
+                  img/sizes/lg-${imageFileName} 800w,
+                  img/sizes/lg-${imageFileName} 2x`;
+  image.sizes = `(min-width: 700px) 50vw,
+                 (min-width: 1024px) 33vw`;
   li.append(image);
 
   const name = document.createElement('h1');
