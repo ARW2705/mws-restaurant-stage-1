@@ -63,9 +63,10 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
   const imageFileName = imageUrl.substring(4);
   image.src = imageUrl;
   // fetch smaller image files on smaller, 1x screens
-  image.srcset = `img/sizes/sm-${imageFileName} 480w,
-                  img/${imageFileName} 1500w,
-                  img/${imageFileName} 2x`;
+  image.srcset = `img/sizes/sm-${imageFileName} 360w,
+                  img/sizes/md-${imageFileName} 480w,
+                  img/sizes/lg-${imageFileName} 800w,
+                  img/sizes/lg-${imageFileName} 2x`;
 
   const cuisine = document.getElementById('restaurant-cuisine');
   cuisine.innerHTML = restaurant.cuisine_type;
@@ -167,8 +168,10 @@ createReviewHTML = (review) => {
  */
 fillBreadcrumb = (restaurant=self.restaurant) => {
   const breadcrumb = document.getElementById('breadcrumb');
+  breadcrumb.lastElementChild.removeAttribute('aria-current');
   const li = document.createElement('li');
   li.innerHTML = restaurant.name;
+  li.setAttribute('aria-current', 'page');
   breadcrumb.appendChild(li);
 }
 
