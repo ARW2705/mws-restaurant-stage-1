@@ -176,7 +176,7 @@ footer a:focus {
 	padding: 5px 0 0 0;
 }
 
-.filter-options select {
+select {
   background-color: white;
   border: 1px solid #fff;
   font-family: Arial,sans-serif;
@@ -188,7 +188,7 @@ footer a:focus {
   width: calc((100% / 2) - 1.2em);
 }
 
-.filter-options select:focus {
+select:focus {
 	border: 4px solid #ffb200;
 }
 
@@ -545,6 +545,14 @@ time {
 
 	.inside #map-container {
 		padding: 0 10%;
+	}
+
+	#neighborhoods-select {
+		margin: 7px 1em 7px 0;
+	}
+
+	#cuisines-select {
+		margin: 7px 0 7px 1em;
 	}
 
 	#restaurants-list li {
