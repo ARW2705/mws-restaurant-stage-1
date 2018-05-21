@@ -6,7 +6,7 @@ const cacheImages = `${cacheBaseName}-images`;
 const version = 'v1.0.0';
 
 /**
- * Cache html/css/js/json and images in their respective caches
+ * Cache html/css/js/json
  */
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -87,3 +87,11 @@ self.addEventListener('activate', event => {
 self.addEventListener('error', event => {
   console.log('SW error', event);
 });
+
+/**
+ * Portions of this page are modifications based on work created and shared by
+ * Google and used according to terms described in the Creative Commons 3.0
+ * Attribution License.
+ *
+ * https://developers.google.com/web/fundamentals/primers/service-workers/
+ */
