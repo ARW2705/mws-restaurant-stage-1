@@ -235,7 +235,7 @@ select:focus {
 	text-decoration: none;
 }
 
-#restaurants-list li h1 {
+#restaurants-list li h2 {
 	color: #ffb200;
 	background-color: #2b2b2b;
   font-family: Arial,sans-serif;
@@ -371,7 +371,7 @@ select:focus {
   padding: 30px 10px 0;
 }
 
-#reviews-container h2 {
+#reviews-container h3 {
   color: #ffb200;
 	background-color: #2b2b2b;
 	border-radius: 15px;
@@ -530,7 +530,7 @@ time {
 		margin-right: 3%;
 	}
 
-	#reviews-container h2 {
+	#reviews-container h3 {
 		margin: 0 3%;
 	}
 
@@ -565,7 +565,7 @@ time {
 		margin: 2% 1%;
 	}
 
-	#reviews-container h2 {
+	#reviews-container h3 {
 		margin: 0 1%;
 	}
 
