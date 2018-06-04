@@ -62,12 +62,12 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
   const imageUrl = DBHelper.imageUrlForRestaurant(restaurant);
   const imageFileName = imageUrl.substring(4);
   image.src = imageUrl;
-  image.alt = `${restaurant.image_alt} for the restaurant, ${restaurant.name}`;
+  image.alt = `${restaurant.name}`;
   // fetch smaller image files on smaller, 1x screens
-  image.srcset = `img/sizes/sm-${imageFileName} 360w,
-                  img/sizes/md-${imageFileName} 480w,
-                  img/sizes/lg-${imageFileName} 800w,
-                  img/sizes/lg-${imageFileName} 2x`;
+  image.srcset = `img/sizes/sm-${imageFileName}.jpg 360w,
+                  img/sizes/md-${imageFileName}.jpg 480w,
+                  img/sizes/lg-${imageFileName}.jpg 800w,
+                  img/sizes/lg-${imageFileName}.jpg 2x`;
 
   const cuisine = document.getElementById('restaurant-cuisine');
   cuisine.innerHTML = restaurant.cuisine_type;

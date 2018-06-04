@@ -160,7 +160,7 @@ createRestaurantHTML = (restaurant) => {
   const imageUrl = DBHelper.imageUrlForRestaurant(restaurant);
   const imageFileName = imageUrl.substring(4);
   image.src = imageUrl;
-  image.alt = `${restaurant.image_alt} for the restaurant, ${restaurant.name}`;
+  image.alt = `${restaurant.name}`;
   // fetch smaller image files on smaller, 1x screens
   image.srcset = `img/sizes/sm-${imageFileName}.jpg 360w,
                   img/sizes/md-${imageFileName}.jpg 480w,
