@@ -162,10 +162,10 @@ createRestaurantHTML = (restaurant) => {
   image.src = imageUrl;
   image.alt = `${restaurant.image_alt} for the restaurant, ${restaurant.name}`;
   // fetch smaller image files on smaller, 1x screens
-  image.srcset = `img/sizes/sm-${imageFileName} 360w,
-                  img/sizes/md-${imageFileName} 480w,
-                  img/sizes/lg-${imageFileName} 800w,
-                  img/sizes/lg-${imageFileName} 2x`;
+  image.srcset = `img/sizes/sm-${imageFileName}.jpg 360w,
+                  img/sizes/md-${imageFileName}.jpg 480w,
+                  img/sizes/lg-${imageFileName}.jpg 800w,
+                  img/sizes/lg-${imageFileName}.jpg 2x`;
   image.sizes = `(min-width: 700px) 50vw,
                  (min-width: 1024px) 33vw`;
   li.append(image);
