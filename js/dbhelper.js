@@ -3,12 +3,15 @@
  */
 class DBHelper {
 
+  /**
+   * Open an indexed DB database called restaurantDB keyed to the restaurant id
+   */
   static openDB() {
     if (!navigator.serviceWorker) {
       return Promise.resolve();
     }
 
-    return idb.open('restaurantDB', 2, upgradeDb => {
+    return idb.open('restaurantDB', 1, upgradeDb => {
       switch(upgradeDb.oldVersion) {
         case 0:
           const store = upgradeDb.createObjectStore('restaurants', {
@@ -23,7 +26,7 @@ class DBHelper {
    * Change this to restaurants.json file location on your server.
    */
   static get DATABASE_URL() {
-    const port = 1337 // Change this to your server port
+    const port = 1337 // database server port
     return `http://localhost:${port}/restaurants`;
   }
 
@@ -35,27 +38,32 @@ class DBHelper {
     _db.then(db => {
       const idbRead = db.transaction('restaurants').objectStore('restaurants');
 
+      // start by checking in idb for restaurants
       return idbRead.getAll()
         .then(response => {
+          // if data present, pass it to the callback function, then continue
           if (response && response.length) {
             console.log('Found data in DB', response);
             callback(null, response);
           }
           const fetchHeaders = new Headers();
           fetchHeaders.append('Content-Type', 'application/json');
+          // call the network for database data
           fetch(DBHelper.DATABASE_URL, {header: fetchHeaders})
             .then(networkResponse => {
-              networkResponse.clone().json()
+              console.log('Fetched from network');
+              networkResponse.json()
                 .then(restaurants => {
-                  const idbRW = db.transaction('restaurants', 'readwrite').objectStore('restaurants');
+                  const idbRW = db.transaction('restaurants', 'readwrite')
+                    .objectStore('restaurants');
                   restaurants.forEach(restaurant => {
                     idbRW.put(restaurant);
                   });
                   console.log('DB updated');
-                });
-              networkResponse.json()
-                .then(restaurants => {
-                  console.log('Fetched from network');
+                  /**
+                   *if the original query to the idb returned nothing,
+                   *pass the network response to the callback function
+                   */
                   if (!response || !response.length) callback(null, restaurants);
                 });
             })
