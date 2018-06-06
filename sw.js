@@ -3,7 +3,7 @@
 const cacheBaseName = 'restaurant-reviews';
 const cacheStatic = `${cacheBaseName}-static`;
 const cacheImages = `${cacheBaseName}-images`;
-const version = 'v1.0.0';
+const version = 'v1.0.1';
 
 /**
  * Cache html/css/js/json
@@ -17,9 +17,10 @@ self.addEventListener('install', event => {
           'index.html',
           'restaurant.html',
           'css/styles.css',
-          'js/dbhelper.js',
+          'js/index.js',
           'js/main.js',
-          'js/restaurant_info.js'
+          'js/restaurant_info.js',
+          'js/register-sw.js'
         ])
       })
   );
