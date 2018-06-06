@@ -3,6 +3,21 @@
  */
 class DBHelper {
 
+  static openDB() {
+    if (!navigator.serviceWorker) {
+      return Promise.resolve();
+    }
+
+    return idb.open('restaurantDB', 2, upgradeDb => {
+      switch(upgradeDb.oldVersion) {
+        case 0:
+          const store = upgradeDb.createObjectStore('restaurants', {
+            keyPath: 'id'
+          });
+      }
+    });
+  }
+
   /**
    * Database URL.
    * Change this to restaurants.json file location on your server.
@@ -16,21 +31,37 @@ class DBHelper {
    * Fetch all restaurants.
    */
   static fetchRestaurants(callback) {
-    const fetchHeaders = new Headers();
-    fetchHeaders.append('Content-Type', 'application/json');
+    const _db = DBHelper.openDB();
+    _db.then(db => {
+      const idbRead = db.transaction('restaurants').objectStore('restaurants');
 
-    fetch('http://localhost:1337/restaurants', {headers: fetchHeaders})
-      .then(res => res.json())
-      .then(restaurants => {
-        console.log(restaurants);
-        if (restaurants && restaurants.length) {
-          callback(null, restaurants)
-        } else {
-          const error = (`Request failed`);
-          callback(error, null);
-        }
-      })
-      .catch(err => console.log(err));
+      return idbRead.getAll()
+        .then(response => {
+          if (response && response.length) {
+            console.log('Found data in DB', response);
+            callback(null, response);
+          }
+          const fetchHeaders = new Headers();
+          fetchHeaders.append('Content-Type', 'application/json');
+          fetch(DBHelper.DATABASE_URL, {header: fetchHeaders})
+            .then(networkResponse => {
+              networkResponse.clone().json()
+                .then(restaurants => {
+                  const idbRW = db.transaction('restaurants', 'readwrite').objectStore('restaurants');
+                  restaurants.forEach(restaurant => {
+                    idbRW.put(restaurant);
+                  });
+                  console.log('DB updated');
+                });
+              networkResponse.json()
+                .then(restaurants => {
+                  console.log('Fetched from network');
+                  if (!response || !response.length) callback(null, restaurants);
+                });
+            })
+            .catch(err => console.log('network error'));
+        });
+    });
   }
 
   /**
