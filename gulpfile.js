@@ -13,6 +13,7 @@ const cleanCSS = require('gulp-clean-css');
 const concat = require('gulp-concat');
 const eslint = require('gulp-eslint');
 const babel = require('gulp-babel');
+const uglify = require('gulp-uglify');
 
 const paths = {
   css: {
@@ -119,6 +120,7 @@ gulp.task('copy-private-scripts', () => {
     .pipe(babel({
       presets: ['env']
     }))
+    .pipe(uglify())
     .pipe(gulp.dest(paths.js.dest));
 });
 
@@ -127,6 +129,7 @@ gulp.task('copy-sw', () => {
     .pipe(babel({
       presets: ['env']
     }))
+    .pipe(uglify())
     .pipe(gulp.dest(paths.sw.dest));
 });
 
@@ -141,6 +144,7 @@ gulp.task('concat-common-scripts', () => {
       presets: ['env']
     }))
     .pipe(concat('index.js'))
+    .pipe(uglify())
     .pipe(gulp.dest(paths.js.dest));
 });
 
