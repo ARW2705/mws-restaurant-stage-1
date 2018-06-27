@@ -30,7 +30,9 @@
   <main>
     <!-- Google Maps embed -->
     <section id="map-container">
-      <div role="application" id="map"></div>
+      <div role="application" id="map">
+        <img id="static-map" src="img/map/staticmap.png" alt="static view of google maps"></img>
+      </div>
     </section>
     <!-- end Google Maps embed -->
     <section>
@@ -72,9 +74,17 @@
   <!-- Google Maps -->
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCozwim3IQlmfOUwATf2hSISzvUR-3W5HY&libraries=places&callback=initMap"></script>
   <!-- Register service worker -->
-  <script type="application/javascript" src="js/register-sw.js"></script>
+  <script>
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.register('sw.js', {scope: './'})
+        .then(registration => {
+          if (!navigator.serviceWorker.controller) return;
+          console.log('service worker registered!');
+        });
+    }
+  </script>
   <!-- End scripts -->
-  <!-- <script src="js/index.js" type="application/javascript"></script> -->
+
 </body>
 
 </html>
