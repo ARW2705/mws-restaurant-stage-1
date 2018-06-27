@@ -79,7 +79,7 @@ main {
 footer {
   background-color: #444;
   color: #dedede;
-  font-size: 8pt;
+  font-size: 1em;
   letter-spacing: 1px;
   padding: 25px;
   text-align: center;
@@ -185,7 +185,7 @@ select {
   background-color: white;
   border: 1px solid #fff;
   font-family: Arial,sans-serif;
-  font-size: 11pt;
+  font-size: 1em;
   height: 35px;
   letter-spacing: 0;
   margin: 7px;
@@ -260,7 +260,7 @@ select:focus {
 
 #restaurants-list p {
   margin: 0;
-  font-size: 11pt;
+  font-size: 1em;
 }
 
 #restaurants-list .restaurant-img {
@@ -270,6 +270,18 @@ select:focus {
   max-width: 100%;
   min-height: 248px;
   min-width: 100%;
+}
+
+#restaurants-list .restaurant-img img {
+  display: block;
+	padding: 0 !important;
+	width: 100%;
+	min-width: 248px;
+  min-height: 248px;
+}
+
+#restaurants-list .restaurant-img source {
+	padding: 0 !important;
 }
 
 
