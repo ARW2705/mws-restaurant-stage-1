@@ -156,7 +156,12 @@ footer a:focus {
 #map {
   height: 400px;
   width: 100%;
-  background-color: #ccc;
+  background-color: #ededed;
+}
+
+#static-map {
+	display: block;
+	margin: 0 auto;
 }
 
 
