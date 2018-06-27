@@ -3,7 +3,7 @@
 const cacheBaseName = 'restaurant-reviews';
 const cacheStatic = `${cacheBaseName}-static`;
 const cacheImages = `${cacheBaseName}-images`;
-const version = 'v1.0.1';
+const version = 'v1.0.0';
 
 /**
  * Cache html/css/js/json
@@ -12,6 +12,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(`${cacheStatic}-${version}`)
       .then(cache => {
+        console.log('install', cache);
         return cache.addAll([
           '/',
           'index.html',
@@ -20,7 +21,8 @@ self.addEventListener('install', event => {
           'js/index.js',
           'js/main.js',
           'js/restaurant_info.js',
-          'js/register-sw.js'
+          'img/icons/restaurant-icon-sm.png',
+          'img/map/staticmap.png'
         ])
       })
   );
