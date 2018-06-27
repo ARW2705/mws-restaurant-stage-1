@@ -1,1 +1,0 @@
-"use strict";navigator.serviceWorker&&navigator.serviceWorker.register("sw.js").then(function(r){navigator.serviceWorker.controller&&console.log("service worker registered!")});
