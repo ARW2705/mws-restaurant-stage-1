@@ -37,7 +37,7 @@ window.addEventListener('load', event => {
     Array.from(images).forEach(image => loadImage(image));
   } else {
     observer = new IntersectionObserver(onIntersection, options);
-    images.forEach(image => observer.observe(image));
+    images.forEach(image => {console.log('observing'); observer.observe(image)});
   }
 });
 
@@ -113,7 +113,9 @@ window.initMap = () => {
     center: loc,
     scrollwheel: false
   });
-  const i = document.querySelector('iframe');
+  google.maps.event.addListenerOnce(self.map, 'idle', () => {
+    console.log('map loaded');
+  });
   updateRestaurants();
 }
 
@@ -185,19 +187,26 @@ window.fillRestaurantsHTML = (restaurants = self.restaurants) => {
 window.createRestaurantHTML = (restaurant) => {
   const li = document.createElement('li');
 
-  const image = document.createElement('img');
+  const picture = document.createElement('picture');
   const imageUrl = DBHelper.imageUrlForRestaurant(restaurant);
-  image.className = 'restaurant-img';
+  picture.className = 'restaurant-img';
+
+  const source = document.createElement('source');
+  source.setAttribute('data-src', imageUrl);
+  picture.append(source);
+
+  const image = document.createElement('img');
   image.alt = `${restaurant.name}`;
   image.setAttribute('data-src', imageUrl);
-  li.append(image);
+  picture.append(image);
+  li.append(picture);
 
   if (window.innerWidth < 700 && loadCount < 1)
-    loadImage(image);
+    loadImage(picture);
   else if (window.innerWidth > 700 && window.innerWidth < 1024 && loadCount < 2)
-    loadImage(image);
+    loadImage(picture);
   else if (window.innerWidth > 1024 && loadCount < 3)
-    loadImage(image);
+    loadImage(picture);
   loadCount++;
 
   const name = document.createElement('h2');
@@ -236,16 +245,27 @@ window.addMarkersToMap = (restaurants = self.restaurants) => {
 }
 
 window.loadImage = image => {
-  const imageUrl = image.dataset.src;
+  const imageUrl = image.firstElementChild.dataset.src;
   if (imageUrl) {
     const imageFileName = imageUrl.substring(4);
-    image.src = imageUrl;
+
+    // source attributes
+    // fetch smaller webp files on smaller, 1x screens
+    image.children[0].srcset = `img/sizes/sm-${imageFileName}.webp 360w,
+                    img/sizes/md-${imageFileName}.webp 480w,
+                    img/sizes/lg-${imageFileName}.webp 800w,
+                    img/sizes/lg-${imageFileName}.webp 2x`;
+    image.children[1].sizes = `(min-width: 700px) 50vw,
+                   (min-width: 1024px) 33vw`;
+
+    // img attributes
+    image.children[1].src = imageUrl;
     // fetch smaller image files on smaller, 1x screens
-    image.srcset = `img/sizes/sm-${imageFileName}.jpg 360w,
+    image.children[1].srcset = `img/sizes/sm-${imageFileName}.jpg 360w,
                     img/sizes/md-${imageFileName}.jpg 480w,
                     img/sizes/lg-${imageFileName}.jpg 800w,
                     img/sizes/lg-${imageFileName}.jpg 2x`;
-    image.sizes = `(min-width: 700px) 50vw,
+    image.children[1].sizes = `(min-width: 700px) 50vw,
                    (min-width: 1024px) 33vw`;
   }
 };
