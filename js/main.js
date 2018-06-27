@@ -2,7 +2,10 @@ let restaurants,
   neighborhoods,
   cuisines
 var map
-var markers = []
+var markers = [];
+let observer;
+let loadCount = 0;
+
 
 /**
  * Fetch neighborhoods and cuisines as soon as the page is loaded.
@@ -10,6 +13,32 @@ var markers = []
 document.addEventListener('DOMContentLoaded', (event) => {
   fetchNeighborhoods();
   fetchCuisines();
+  console.log('loaded');
+});
+
+window.addEventListener('load', event => {
+  console.log('Observing viewport');
+  const images = document.querySelectorAll('.restaurant-img');
+  const options = {
+    rootMargin: '50px 0px',
+    threhold: 0.01
+  };
+
+  const onIntersection = entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        observer.unobserve(entry.target);
+        loadImage(entry.target);
+      }
+    });
+  };
+
+  if (!('IntersectionObserver' in window)) {
+    Array.from(images).forEach(image => loadImage(image));
+  } else {
+    observer = new IntersectionObserver(onIntersection, options);
+    images.forEach(image => observer.observe(image));
+  }
 });
 
 /**
@@ -84,6 +113,7 @@ window.initMap = () => {
     center: loc,
     scrollwheel: false
   });
+  const i = document.querySelector('iframe');
   updateRestaurants();
 }
 
@@ -156,19 +186,19 @@ window.createRestaurantHTML = (restaurant) => {
   const li = document.createElement('li');
 
   const image = document.createElement('img');
-  image.className = 'restaurant-img';
   const imageUrl = DBHelper.imageUrlForRestaurant(restaurant);
-  const imageFileName = imageUrl.substring(4);
-  image.src = imageUrl;
+  image.className = 'restaurant-img';
   image.alt = `${restaurant.name}`;
-  // fetch smaller image files on smaller, 1x screens
-  image.srcset = `img/sizes/sm-${imageFileName}.jpg 360w,
-                  img/sizes/md-${imageFileName}.jpg 480w,
-                  img/sizes/lg-${imageFileName}.jpg 800w,
-                  img/sizes/lg-${imageFileName}.jpg 2x`;
-  image.sizes = `(min-width: 700px) 50vw,
-                 (min-width: 1024px) 33vw`;
+  image.setAttribute('data-src', imageUrl);
   li.append(image);
+
+  if (window.innerWidth < 700 && loadCount < 1)
+    loadImage(image);
+  else if (window.innerWidth > 700 && window.innerWidth < 1024 && loadCount < 2)
+    loadImage(image);
+  else if (window.innerWidth > 1024 && loadCount < 3)
+    loadImage(image);
+  loadCount++;
 
   const name = document.createElement('h2');
   name.innerHTML = restaurant.name;
@@ -204,3 +234,18 @@ window.addMarkersToMap = (restaurants = self.restaurants) => {
     self.markers.push(marker);
   });
 }
+
+window.loadImage = image => {
+  const imageUrl = image.dataset.src;
+  if (imageUrl) {
+    const imageFileName = imageUrl.substring(4);
+    image.src = imageUrl;
+    // fetch smaller image files on smaller, 1x screens
+    image.srcset = `img/sizes/sm-${imageFileName}.jpg 360w,
+                    img/sizes/md-${imageFileName}.jpg 480w,
+                    img/sizes/lg-${imageFileName}.jpg 800w,
+                    img/sizes/lg-${imageFileName}.jpg 2x`;
+    image.sizes = `(min-width: 700px) 50vw,
+                   (min-width: 1024px) 33vw`;
+  }
+};
