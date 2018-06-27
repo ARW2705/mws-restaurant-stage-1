@@ -28,6 +28,10 @@ const paths = {
     src: 'img/icons/*.png',
     dest: 'dist/img/icons/'
   },
+  map: {
+    src: 'img/map/*.png',
+    dest: 'dist/img/map/'
+  },
   sw: {
     src: './sw.js',
     dest: 'dist/'
@@ -44,8 +48,7 @@ const paths = {
     ],
     src: [
       'js/main.js',
-      'js/restaurant_info.js',
-      'js/register-sw.js'
+      'js/restaurant_info.js'
     ],
     dest: 'dist/js/'
   },
@@ -65,6 +68,13 @@ gulp.task('copy-icons', () => {
   console.log('Moving icons to dist directory');
   gulp.src(paths.icons.src)
     .pipe(gulp.dest(paths.icons.dest));
+});
+
+gulp.task('copy-map', () => {
+  console.log('Moving icons to dist directory');
+  gulp.src(paths.map.src)
+    .pipe(imagemin({progressive: true}))
+    .pipe(gulp.dest(paths.map.dest));
 });
 
 gulp.task('styles', () => {
@@ -158,6 +168,7 @@ gulp.task('lint', () => {
 const gulpTaskList = [
   'copy-html',
   'copy-icons',
+  'copy-map',
   'styles',
   'resizeImages',
   'concat-common-scripts',
