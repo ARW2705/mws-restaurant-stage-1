@@ -11,7 +11,7 @@ class DBHelper {
       return Promise.resolve();
     }
 
-    return idb.open('restaurantDB', 1, upgradeDb => {
+    return idb.open('restaurantDB', 2, upgradeDb => {
       switch(upgradeDb.oldVersion) {
         case 0:
           const store = upgradeDb.createObjectStore('restaurants', {
@@ -43,7 +43,7 @@ class DBHelper {
         .then(response => {
           // if data present, pass it to the callback function, then continue
           if (response && response.length) {
-            console.log('Found data in DB', response);
+            console.log('Found data in DB');
             callback(null, response);
           }
           const fetchHeaders = new Headers();
