@@ -4,24 +4,6 @@
 class DBHelper {
 
   /**
-   * Open an indexed DB database called restaurantDB keyed to the restaurant id
-   */
-  static openDB() {
-    if (!navigator.serviceWorker) {
-      return Promise.resolve();
-    }
-
-    return idb.open('restaurantDB', 2, upgradeDb => {
-      switch(upgradeDb.oldVersion) {
-        case 0:
-          const store = upgradeDb.createObjectStore('restaurants', {
-            keyPath: 'id'
-          });
-      }
-    });
-  }
-
-  /**
    * Database URL.
    * Change this to restaurants.json file location on your server.
    */
@@ -30,46 +12,23 @@ class DBHelper {
     return `http://localhost:${port}/restaurants`;
   }
 
+
   /**
    * Fetch all restaurants.
    */
   static fetchRestaurants(callback) {
-    const _db = DBHelper.openDB();
-    _db.then(db => {
-      const idbRead = db.transaction('restaurants').objectStore('restaurants');
-
-      // start by checking in idb for restaurants
-      return idbRead.getAll()
-        .then(response => {
-          // if data present, pass it to the callback function, then continue
-          if (response && response.length) {
-            console.log('Found data in DB');
-            callback(null, response);
-          }
-          const fetchHeaders = new Headers();
-          fetchHeaders.append('Content-Type', 'application/json');
-          // call the network for database data
-          fetch(DBHelper.DATABASE_URL, {header: fetchHeaders})
-            .then(networkResponse => {
-              console.log('Fetched from network');
-              networkResponse.json()
-                .then(restaurants => {
-                  const idbRW = db.transaction('restaurants', 'readwrite')
-                    .objectStore('restaurants');
-                  restaurants.forEach(restaurant => {
-                    idbRW.put(restaurant);
-                  });
-                  console.log('DB updated');
-                  /**
-                   *if the original query to the idb returned nothing,
-                   *pass the network response to the callback function
-                   */
-                  if (!response || !response.length) callback(null, restaurants);
-                });
-            })
-            .catch(err => console.log('network error'));
-        });
-    });
+    const fetchHeaders = new Headers();
+    fetchHeaders.append('content-type', 'application/json');
+    fetch(DBHelper.DATABASE_URL, {header: fetchHeaders})
+      .then(res => {
+        console.log('response from database', res);
+        res.json()
+          .then(restaurants => {
+            callback(null, restaurants);
+          })
+          .catch(err => console.log('Parse failed', err));
+      })
+      .catch(err => console.log('Failed to fetch from database', err));
   }
 
   /**
@@ -81,7 +40,9 @@ class DBHelper {
       if (error) {
         callback(error, null);
       } else {
-        const restaurant = restaurants.find(r => r.id == id);
+        console.log(restaurants);
+        let restaurant;
+        restaurant = (Array.isArray(restaurants)) ? restaurants.find(r => r.id == id): restaurants;
         if (restaurant) { // Got the restaurant
           callback(null, restaurant);
         } else { // Restaurant does not exist in the database
