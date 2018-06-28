@@ -355,6 +355,11 @@ select:focus {
 	z-index: 2;
 }
 
+#restaurant-img img {
+	display: block;
+	height: 100%;
+}
+
 #restaurant-address {
   font-size: 1.5em;
   margin: 10px 0px 20px;
