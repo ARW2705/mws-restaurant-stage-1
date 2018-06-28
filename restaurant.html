@@ -44,7 +44,11 @@
     <!-- Beginning restaurant -->
     <section id="restaurant-container">
       <h2 id="restaurant-name"></h2>
-      <img id="restaurant-img" alt="">
+      <!-- <img id="restaurant-img" alt=""> -->
+      <picture id="restaurant-img">
+        <source id="picture-source">
+        <img id="picture-img" alt="">
+      </picture>
       <h3 id="restaurant-cuisine"></h3>
       <address id="restaurant-address"></address>
       <table id="restaurant-hours"></table>
@@ -66,7 +70,8 @@
 
   <!-- Beginning scripts -->
   <!-- Common script -->
-  <script src="js/index.js" type="application/javascript"></script>
+  <script src="js/idb.js" type="application/javascript"></script>
+  <script src="js/dbhelper.js" type="application/javascript"></script>
   <!-- Restaurant info specific script -->
   <script type="application/javascript" charset="utf-8" src="js/restaurant_info.js"></script>
   <!-- Google Maps -->
