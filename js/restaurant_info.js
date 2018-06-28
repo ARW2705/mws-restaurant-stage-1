@@ -57,11 +57,17 @@ window.fillRestaurantHTML = (restaurant = self.restaurant) => {
   const formattedAddress = [restaurant.address.slice(0, index), '<br>', restaurant.address.slice(index)].join('');
   address.innerHTML = formattedAddress;
 
-  const image = document.getElementById('restaurant-img');
-  image.className = 'restaurant-img'
+  const picture = document.getElementById('restaurant-img');
+  const source = document.getElementById('picture-source');
+  const image = document.getElementById('picture-img');
+  picture.className = 'restaurant-img';
   const imageUrl = DBHelper.imageUrlForRestaurant(restaurant);
   const imageFileName = imageUrl.substring(4);
-  image.src = imageUrl;
+  // fetch smaller image files on smaller, 1x screens
+  source.srcset = `img/sizes/sm-${imageFileName}.webp 360w,
+                  img/sizes/md-${imageFileName}.webp 480w,
+                  img/sizes/lg-${imageFileName}.webp 800w,
+                  img/sizes/lg-${imageFileName}.webp 2x`;
   image.alt = `${restaurant.name}`;
   // fetch smaller image files on smaller, 1x screens
   image.srcset = `img/sizes/sm-${imageFileName}.jpg 360w,
