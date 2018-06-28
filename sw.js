@@ -1,9 +1,20 @@
 'use strict';
 
+importScripts('/js/idb.js');
 const cacheBaseName = 'restaurant-reviews';
 const cacheStatic = `${cacheBaseName}-static`;
 const cacheImages = `${cacheBaseName}-images`;
 const version = 'v1.0.0';
+let initComplete = false;
+
+const dbPromise = idb.open('restaurantDB', 1, upgradeDb => {
+    switch(upgradeDb.oldVersion) {
+      case 0:
+        const store = upgradeDb.createObjectStore('restaurants', {
+          keyPath: 'id'
+        });
+    }
+  });
 
 /**
  * Cache html/css/js/json
@@ -12,16 +23,17 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(`${cacheStatic}-${version}`)
       .then(cache => {
-        console.log('install', cache);
         return cache.addAll([
           '/',
           'index.html',
           'restaurant.html',
           'css/styles.css',
-          'js/index.js',
+          'js/idb.js',
+          'js/dbhelper.js',
           'js/main.js',
           'js/restaurant_info.js',
           'img/icons/restaurant-icon-sm.png',
+          'img/map/staticmap.webp',
           'img/map/staticmap.png'
         ])
       })
@@ -29,10 +41,81 @@ self.addEventListener('install', event => {
 });
 
 /**
- * On fetch event, check cache for match and return from cache if present,
- * otherwise, continue fetch request to network, then cache the network's response
+ * Handle fetch event for database
+ * get from idb and fallback to network
+ * if request from detail page, use id in url to fetch single record
+ * else get all records - force fetch on first call for all records
  */
-self.addEventListener('fetch', event => {
+const handleDBRequest = (event, id) => {
+  let url = event.request.url;
+  if (id != -1) url = `${event.request.url}/${id}`;
+  let newHeaders = new Headers();
+  for (let oldHeader of event.request.headers.entries()) {
+    newHeaders.append(oldHeader[0], oldHeader[1]);
+  }
+  newHeaders.append('content-type', 'application/json');
+
+  /**
+   * create new request from fetch request data substituting
+   * url based on if an id for a detail page is present
+   * and add headers for JSON
+   */
+  const newRequest = new Request(url, {
+    method: event.request.method,
+    headers: newHeaders,
+    body: event.request.body,
+    referrer: event.request.referrer,
+    referrerPolicy: event.request.referrerPolicy,
+    mode: event.request.mode,
+    credentials: event.request.credentials,
+    cache: event.request.cache,
+    redirect: event.request.redirect,
+    integrity: event.request.integrity
+  });
+
+  event.respondWith(
+    dbPromise.then(db => {
+      const idbRead = db.transaction('restaurants').objectStore('restaurants');
+      // get all idb records for restaurants
+      return idbRead.getAll()
+        .then(response => {
+          /**
+           *if id is not -1, a single record is requested,
+           * return that record from idb if present
+           */
+          if (id != -1 && response && response.length) return response.find(r => r.id == id);
+          // if requesting all records and not first page load, return all idb records
+          else if (initComplete && response && response.length) return response;
+
+          // get records from network - single record for detail, all for home
+          return fetch(newRequest)
+            .then(networkResponse => networkResponse.json())
+            .then(parsed => {
+              // add records to idb
+              const idbWrite = db.transaction('restaurants', 'readwrite').objectStore('restaurants');
+              if (Array.isArray(parsed)) {
+                initComplete = true;
+                parsed.forEach(restaurant => {
+                  idbWrite.put(restaurant);
+                });
+              } else {
+                idbWrite.put(parsed);
+              }
+              return parsed;
+            })
+            .catch(err => console.log('DB fetch event failed', err))
+        })
+        .then(selectedResponse => new Response(JSON.stringify(selectedResponse)))
+        .catch(err => console.log('DB fetch failed', err));
+    })
+  );
+};
+
+/**
+ * Handle fetch event for assets
+ * get from cache and fallback to network
+ */
+const handleAssetRequest = event => {
   const options = {ignoreSearch: true};
   event.respondWith(
     caches.match(event.request, options)
@@ -54,12 +137,32 @@ self.addEventListener('fetch', event => {
               .then(cache => {
                 cache.put(event.request, responseToCache);
               })
-              .catch(err => console.log('uh-oh', err));
+              .catch(err => console.log('Cache error', err));
             return response;
           });
       })
-      .catch(err => console.log('uh-oh', err))
+      .catch(err => console.log('Cache fetch error', err))
   );
+}
+
+/**
+ * On fetch event, determine by port if event is for json data from Database
+ * or a request for assets. port 1337 == db, port 8000 == assets
+ */
+self.addEventListener('fetch', event => {
+  let id = -1;
+  const url = new URL(event.request.url);
+  const port = url.port;
+  if (port == "1337") {
+    const ref = event.request.referrer;
+    if (ref.indexOf('restaurant.html') != -1) {
+      const index = ref.indexOf('=') + 1;
+      id = parseInt(ref.slice(index));
+    }
+    handleDBRequest(event, id);
+  } else if (port == "8000") {
+    handleAssetRequest(event);
+  }
 });
 
 /**
