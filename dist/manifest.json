@@ -1,6 +1,6 @@
 {
   "name": "Restaurant Reviews",
-  "short_name": "Restaurants Reviews",
+  "short_name": "Food Reviews",
   "start_url": "/",
   "display": "standalone",
   "icons": [

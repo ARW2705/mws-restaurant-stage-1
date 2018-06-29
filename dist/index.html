@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta charset="utf-8">
   <meta name="theme-color" content="#333">
+  <meta name="Description" content="View reviews of local restaurants">
   <!-- Link service worker manifest -->
   <link rel="manifest" href="/manifest.json">
   <!-- Normalize.css for better cross-browser consistency -->
@@ -31,7 +32,11 @@
     <!-- Google Maps embed -->
     <section id="map-container">
       <div role="application" id="map">
-        <img id="static-map" src="img/map/staticmap.png" alt="static view of google maps"></img>
+        <!-- <img id="static-map" src="img/map/staticmap.png" alt="static view of google maps"></img> -->
+        <picture>
+          <source srcset="/img/map/staticmap.webp">
+          <img id="static-map" src="img/map/staticmap.png" alt="static view of google maps">
+        </picture>
       </div>
     </section>
     <!-- end Google Maps embed -->
@@ -68,7 +73,8 @@
 
   <!-- Beginning scripts -->
   <!-- common js script file -->
-  <script src="js/index.js" type="application/javascript"></script>
+  <script src="js/idb.js" type="application/javascript"></script>
+  <script src="js/dbhelper.js" type="application/javascript"></script>
   <!-- Main specific javascript file -->
   <script type="application/javascript" charset="utf-8" src="js/main.js"></script>
   <!-- Google Maps -->
