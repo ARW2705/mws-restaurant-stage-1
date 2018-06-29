@@ -1,189 +1,213 @@
-/*eslint-env node */
-
 'use strict';
 
 const gulp = require('gulp');
-const rename = require('gulp-rename');
+const clean = require('gulp-clean');
 const imageResize = require('gulp-image-resize');
 const imagemin = require('gulp-imagemin');
-const clean = require('gulp-clean');
+const webp = require('gulp-webp');
+const rename = require('gulp-rename');
 const autoprefixer = require('gulp-autoprefixer');
-const browserSync = require('browser-sync').create();
 const cleanCSS = require('gulp-clean-css');
-const concat = require('gulp-concat');
-const eslint = require('gulp-eslint');
+const merge = require('merge-stream');
 const babel = require('gulp-babel');
 const uglify = require('gulp-uglify');
+const browserSync = require('browser-sync').create();
+
+/**
+ * File paths
+ */
 
 const paths = {
+  build: {
+    dest: 'dist'
+  },
+  html: {
+    src: '*.html'
+  },
   css: {
-    src: 'css/*',
+    src: 'css/*.css',
     dest: 'dist/css/'
   },
-  images: {
+  image: {
     src: 'img/*.jpg',
     dest: 'dist/img/sizes/'
   },
-  icons: {
-    src: 'img/icons/*.png',
+  icon: {
+    src: 'img/icons/*',
     dest: 'dist/img/icons/'
   },
   map: {
-    src: 'img/map/*.png',
+    src: 'img/map/*',
     dest: 'dist/img/map/'
   },
-  sw: {
-    src: './sw.js',
-    dest: 'dist/'
+  tmp: {
+    src: 'tmp',
+    base: 'tmp/base/',
+    mod: 'tmp/mod/'
   },
-  manifest: {
-    src: './manifest.json',
-    dest: 'dist/'
-  },
-  js: {
-    lintsrc: 'js/**/*.js',
-    concatsrc: [
-      'js/idb.js',
-      'js/dbhelper.js'
-    ],
-    src: [
-      'js/main.js',
-      'js/restaurant_info.js'
-    ],
+  script: {
+    src: 'js/*.js',
     dest: 'dist/js/'
   },
-  html: {
-    src: './*.html',
-    dest: 'dist/'
+  sw: {
+    worker: 'sw.js',
+    manifest: 'manifest.json'
   }
 };
 
-gulp.task('copy-html', () => {
-  console.log('Moving HTML to dist directory');
-  gulp.src(paths.html.src)
-    .pipe(gulp.dest(paths.html.dest));
+
+/**
+ * Task list
+ */
+
+const tasks = [
+  'clean-dist',
+  'clean-temp',
+  'html',
+  'styles',
+  'process-images',
+  'copy-icons',
+  'copy-map',
+  'scripts',
+  'service-worker',
+  'manifest'
+];
+
+
+/**
+ * Clean up tasks
+ */
+
+gulp.task('clean-dist', () => {
+  return gulp.src(paths.build.dest)
+    .pipe(clean());
 });
 
-gulp.task('copy-icons', () => {
-  console.log('Moving icons to dist directory');
-  gulp.src(paths.icons.src)
-    .pipe(gulp.dest(paths.icons.dest));
+gulp.task('clean-temp', () => {
+  return gulp.src(paths.tmp.src)
+    .pipe(clean());
 });
 
-gulp.task('copy-map', () => {
-  console.log('Moving icons to dist directory');
-  gulp.src(paths.map.src)
-    .pipe(imagemin({progressive: true}))
-    .pipe(gulp.dest(paths.map.dest));
+
+/**
+ * HTML tasks
+ */
+
+gulp.task('html', ['clean-dist'], () => {
+  return gulp.src(paths.html.src)
+    .pipe(gulp.dest(paths.build.dest));
 });
 
-gulp.task('styles', () => {
-  console.log('Prefixing css');
-  gulp.src(paths.css.src)
+gulp.task('update-html', () => {
+  return gulp.src(paths.html.src)
+    .pipe(gulp.dest(paths.build.dest));
+});
+
+
+/**
+ * CSS tasks
+ */
+
+gulp.task('styles', ['clean-dist'], () => {
+  return gulp.src(paths.css.src)
     .pipe(autoprefixer({
       browsers: ['last 2 versions']
     }))
     .pipe(cleanCSS())
     .pipe(gulp.dest(paths.css.dest))
     .pipe(browserSync.stream());
-})
-
-gulp.task('clean-images', () => {
-  console.log('Cleaning old files');
-  gulp.src(paths.images.dest, {read: false})
-    .pipe(clean());
 });
 
-gulp.task('resizeImages', ['clean-images'], () => {
-  console.log('Running gulp-image-resize');
-  const imagesToResize = gulp.src(paths.images.src);
-  imagesToResize
-    .pipe(imageResize({
-      percentage: 100,
-      imageMagick: true
-    }))
-    .pipe(rename(path => path.basename = 'lg-' + path.basename))
-    .pipe(imagemin({progressive: true}))
-    .pipe(gulp.dest(paths.images.dest));
 
-  imagesToResize
-    .pipe(imageResize({
-      percentage: 60,
-      imageMagick: true
-    }))
-    .pipe(rename(path => path.basename = 'md-' + path.basename))
-    .pipe(imagemin({progressive: true}))
-    .pipe(gulp.dest(paths.images.dest));
+/**
+ * Image tasks
+ */
 
-  imagesToResize
-    .pipe(imageResize({
-      percentage: 45,
-      imageMagick: true
-    }))
-    .pipe(rename(path => path.basename = 'sm-' + path.basename))
-    .pipe(imagemin({progressive: true}))
-    .pipe(gulp.dest(paths.images.dest));
+const imageResizeTasks = [];
+const sizes = [100, 60, 45];
+const fileNames = ['lg', 'md', 'sm'];
+
+for (let i=0; i < 3; i++) {
+  let imageResizeTask = `image-resize-${fileNames[i]}`;
+  gulp.task(imageResizeTask, ['clean-temp'], () => {
+    return gulp.src(paths.image.src)
+      .pipe(imageResize({
+        percentage: sizes[i],
+        imageMagick: true
+      }))
+      .pipe(rename(path => path.basename = `${fileNames[i]}-${path.basename}`))
+      .pipe(imagemin({progressive: true}))
+      .pipe(gulp.dest(paths.tmp.base));
+  });
+  imageResizeTasks.push(imageResizeTask);
+}
+
+gulp.task('image-resize', imageResizeTasks);
+
+gulp.task('jpg-to-webp', ['image-resize'], () => {
+  return gulp.src(`${paths.tmp.base}/*.jpg`)
+    .pipe(webp())
+    .pipe(gulp.dest(paths.tmp.mod));
 });
 
-gulp.task('copy-private-scripts', () => {
-  gulp.src(paths.js.src)
+gulp.task('process-images', ['jpg-to-webp', 'clean-dist'], () => {
+  return gulp.src([
+      `${paths.tmp.base}*.jpg`,
+      `${paths.tmp.mod}*.webp`
+    ])
+    .pipe(gulp.dest(paths.image.dest));
+});
+
+gulp.task('copy-icons', ['clean-dist'], () => {
+  return gulp.src(paths.icon.src)
+    .pipe(imagemin({progressive: true}))
+    .pipe(gulp.dest(paths.icon.dest));
+});
+
+gulp.task('copy-map', ['clean-dist'], () => {
+  return gulp.src(paths.map.src)
+    .pipe(imagemin({progressive: true}))
+    .pipe(gulp.dest(paths.map.dest));
+});
+
+
+/**
+ * Script tasks
+ */
+
+gulp.task('scripts', ['clean-dist'], () => {
+  gulp.src(paths.script.src)
     .pipe(babel({
       presets: ['env']
     }))
     .pipe(uglify())
-    .pipe(gulp.dest(paths.js.dest));
+    .pipe(gulp.dest(paths.script.dest));
 });
 
-gulp.task('copy-sw', () => {
-  gulp.src(paths.sw.src)
+gulp.task('service-worker', ['clean-dist'], () => {
+  gulp.src(paths.sw.worker)
     .pipe(babel({
       presets: ['env']
     }))
     .pipe(uglify())
-    .pipe(gulp.dest(paths.sw.dest));
+    .pipe(gulp.dest(paths.build.dest));
 });
 
-gulp.task('copy-manifest', () => {
-  gulp.src(paths.manifest.src)
-    .pipe(gulp.dest(paths.manifest.dest));
+gulp.task('manifest', ['clean-dist'], () => {
+  gulp.src(paths.sw.manifest)
+    .pipe(gulp.dest(paths.build.dest));
 });
 
-gulp.task('concat-common-scripts', () => {
-  gulp.src(paths.js.concatsrc)
-    .pipe(babel({
-      presets: ['env']
-    }))
-    .pipe(concat('index.js'))
-    .pipe(uglify())
-    .pipe(gulp.dest(paths.js.dest));
-});
 
-gulp.task('lint', () => {
-	gulp.src(paths.js.lintsrc)
-		.pipe(eslint())
-		.pipe(eslint.format())
-		.pipe(eslint.failOnError());
-});
-
-const gulpTaskList = [
-  'copy-html',
-  'copy-icons',
-  'copy-map',
-  'styles',
-  'resizeImages',
-  'concat-common-scripts',
-  'copy-private-scripts',
-  'copy-sw',
-  'copy-manifest'
-];
-
-gulp.task('default', gulpTaskList, () => {
+/**
+ * DEFAULT
+ */
+gulp.task('default', tasks, () => {
+  gulp.watch('*.html', ['update-html']);
   gulp.watch('css/**/*.css', ['styles']);
-  gulp.watch('js/**/*.js', ['lint']);
-  gulp.watch('/index.html', ['copy-html']);
-  gulp.watch('./dist/index.html').on('change', browserSync.reload);
+  gulp.watch('dist/*.html').on('change', browserSync.reload);
 
   browserSync.init({
-    server: './dist'
+    server: 'dist'
   });
 });
