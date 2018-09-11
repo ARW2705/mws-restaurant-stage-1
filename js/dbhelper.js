@@ -12,6 +12,14 @@ class DBHelper {
     return `http://localhost:${port}/restaurants`;
   }
 
+  /**
+   * Review Database URL
+   */
+  static get REVIEW_DB_URL() {
+    const port = 1337;
+    return `http://localhost:${port}/reviews`;
+  }
+
 
   /**
    * Fetch all restaurants.
@@ -21,7 +29,6 @@ class DBHelper {
     fetchHeaders.append('content-type', 'application/json');
     fetch(DBHelper.DATABASE_URL, {header: fetchHeaders})
       .then(res => {
-        console.log('response from database', res);
         res.json()
           .then(restaurants => {
             callback(null, restaurants);
@@ -40,7 +47,6 @@ class DBHelper {
       if (error) {
         callback(error, null);
       } else {
-        console.log(restaurants);
         let restaurant;
         restaurant = (Array.isArray(restaurants)) ? restaurants.find(r => r.id == id): restaurants;
         if (restaurant) { // Got the restaurant
@@ -168,6 +174,80 @@ class DBHelper {
       animation: google.maps.Animation.DROP}
     );
     return marker;
+  }
+
+  /**
+   * Get ALL reviews
+   */
+  static getReviews(callback) {
+    const fetchHeaders = new Headers();
+    fetchHeaders.append('content-type', 'application/json');
+    fetch(DBHelper.REVIEW_DB_URL, {header: fetchHeaders})
+      .then(res => {
+        res.json()
+          .then(reviews => {
+            callback(null, reviews);
+          })
+          .catch(err => {
+            console.log('An error occurred when getting reviews', err);
+          });
+      })
+      .catch(err => {
+        console.log('Failed to fetch all reviews', err);
+      });
+  }
+
+  /**
+   * Get all reviews by restaurant id
+   */
+  static getReviewsByRestaurantId(id, callback) {
+    DBHelper.getReviews((error, reviews) => {
+      if (error) {
+        callback(error, null);
+      } else {
+        console.log('got reviews', reviews);
+        const _reviews = (Array.isArray(reviews)) ? reviews.filter(review => review.restaurant_id == id): reviews;
+        if (_reviews) {
+          callback(null, _reviews);
+        } else {
+          callback('Reviews do not exist', null);
+        }
+      }
+    });
+  }
+
+  /**
+   * Get review by id
+   */
+  static getReviewById(id, callback) {
+    DBHelper.getReviews((error, reviews) => {
+      if (error) {
+        callback(error, null);
+      } else {
+        const review = (Array.isArray(reviews)) ? reviews.find(review => review.id == id): review;
+        if (review) {
+          callback(null, review);
+        } else {
+          callback('Review does not exist', null);
+        }
+      }
+    });
+  }
+
+  /**
+   * Get favorited restaurants
+   */
+
+  /**
+   * Perform POST request to add a review
+   */
+  static addReview(review) {
+    // const fetchHeaders = new Headers();
+    // fetchHeaders.append('content-type', 'application/json');
+    // fetch(DBHelper.REVIEW_DB_URL, {
+    //   method: 'POST',
+    //   header: fetchHeaders
+    // })
   }
 
 }
