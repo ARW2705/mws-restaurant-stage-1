@@ -21,7 +21,7 @@ window.addEventListener('load', event => {
   const images = document.querySelectorAll('.restaurant-img');
   const options = {
     rootMargin: '50px 0px',
-    threhold: 0.01
+    threshold: 0.01
   };
 
   const onIntersection = entries => {
