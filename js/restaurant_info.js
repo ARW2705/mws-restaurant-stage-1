@@ -21,7 +21,7 @@ window.initMap = () => {
 }
 
 /**
- * Get current restaurant from page URL.
+ * Get current restaurant and reviews from page URL.
  */
 window.fetchRestaurantFromURL = (callback) => {
   if (self.restaurant) { // restaurant already fetched!
@@ -39,8 +39,15 @@ window.fetchRestaurantFromURL = (callback) => {
         console.error(error);
         return;
       }
-      fillRestaurantHTML();
-      callback(null, restaurant)
+      DBHelper.getReviewsByRestaurantId(id, (reviewError, reviews) => {
+        self.reviews = reviews;
+        if (!reviews) {
+          console.error(reviewError);
+          return;
+        }
+        fillRestaurantHTML();
+        callback(null, restaurant)
+      });
     });
   }
 }
@@ -117,7 +124,7 @@ window.fillRestaurantHoursHTML = (operatingHours = self.restaurant.operating_hou
 /**
  * Create all reviews HTML and add them to the webpage.
  */
-window.fillReviewsHTML = (reviews = self.restaurant.reviews) => {
+window.fillReviewsHTML = (reviews = self.reviews) => {
   const container = document.getElementById('reviews-container');
   const title = document.createElement('h3');
   title.innerHTML = 'Reviews';
@@ -127,13 +134,150 @@ window.fillReviewsHTML = (reviews = self.restaurant.reviews) => {
     const noReviews = document.createElement('p');
     noReviews.innerHTML = 'No reviews yet!';
     container.appendChild(noReviews);
-    return;
+  } else {
+    const ul = document.getElementById('reviews-list');
+    reviews.forEach(review => {
+      ul.appendChild(createReviewHTML(review));
+    });
+    container.appendChild(ul);
   }
-  const ul = document.getElementById('reviews-list');
-  reviews.forEach(review => {
-    ul.appendChild(createReviewHTML(review));
+
+  createReviewForm();
+}
+
+/**
+ * Create form to submit a review
+ */
+
+window.createReviewForm = () => {
+  const container = document.getElementById('reviews-container');
+  const reviewFormContainer = document.createElement('div');
+  reviewFormContainer.className = 'review-form-container';
+
+  const reviewForm = document.createElement('form');
+  reviewForm.id = 'review-form';
+  reviewForm.name = 'review-form';
+  const title = document.createElement('h4');
+  title.innerHTML = "Submit a Review";
+  reviewFormContainer.appendChild(title);
+
+  // review name label and input field
+  const reviewerNameContainer = document.createElement('div');
+  reviewerNameContainer.className = 'review-name-container';
+
+  const reviewerNameLabel = document.createElement('label');
+  reviewerNameLabel.for = 'reviewer-name';
+  reviewerNameLabel.innerHTML = "Your name";
+  reviewerNameContainer.appendChild(reviewerNameLabel);
+
+  const reviewerNameInput = document.createElement('input');
+  reviewerNameInput.type = 'text';
+  reviewerNameInput.name = 'reviewer-name';
+  reviewerNameInput.id = 'reviewer-name';
+  reviewerNameInput.placeholder = 'Enter your name here';
+  reviewerNameInput.addEventListener('change', e => {
+    e.preventDefault();
+    checkFormValidation();
   });
-  container.appendChild(ul);
+  reviewerNameContainer.appendChild(reviewerNameInput);
+
+  // attach name container to form
+  reviewForm.appendChild(reviewerNameContainer);
+
+  // review rating label and slider
+  const ratingSliderContainer = document.createElement('div');
+  ratingSliderContainer.className = 'review-rating-slider-container';
+
+  const ratingSliderLabel = document.createElement('label');
+  ratingSliderLabel.for = 'rating-slider';
+  // ratingSliderLabel.innerHTML = "Your rating: ✰ ✰ ✰ ✰ ✰";
+  ratingSliderLabel.innerHTML = 'Your rating ';
+  ratingSliderLabel.id = 'rating-slider-label';
+  const starRating = document.createElement('span');
+  starRating.innerHTML = '★★★★★';
+  starRating.id = 'slider-value';
+  ratingSliderLabel.appendChild(starRating);
+  ratingSliderContainer.appendChild(ratingSliderLabel);
+
+  const ratingSlider = document.createElement('input');
+  ratingSlider.type = 'range';
+  ratingSlider.min = 1;
+  ratingSlider.max = 5;
+  ratingSlider.value = 5;
+  ratingSlider.step = 1;
+  ratingSlider.name = 'rating';
+  ratingSlider.id = 'rating';
+  ratingSlider.addEventListener('change', e => {
+    e.preventDefault();
+    const ratingLabel = document.getElementById('slider-value');
+    ratingLabel.innerHTML = "★".repeat(e.target.value);
+  });
+  ratingSliderContainer.appendChild(ratingSlider);
+
+  reviewForm.appendChild(ratingSliderContainer);
+
+  // review body label and text field
+  const reviewTextContainer = document.createElement('div');
+  reviewTextContainer.className = 'review-body-container';
+
+  const reviewTextLabel = document.createElement('label');
+  reviewTextLabel.innerHTML = 'Comments';
+  reviewTextLabel.for = 'review-body';
+  reviewTextContainer.appendChild(reviewTextLabel);
+
+  const reviewTextInput = document.createElement('textarea');
+  reviewTextInput.name = 'comments';
+  reviewTextInput.id = 'review-body';
+  reviewTextInput.placeholder = 'Enter your comments here';
+  reviewTextInput.addEventListener('change', e => {
+    e.preventDefault();
+    checkFormValidation();
+  });
+  reviewTextContainer.appendChild(reviewTextInput);
+
+  reviewForm.appendChild(reviewTextContainer);
+
+  // form submission button
+  const formSubmitButton = document.createElement('button');
+  formSubmitButton.innerHTML = 'Submit';
+  formSubmitButton.id = 'review-submit-button';
+  formSubmitButton.disabled = true;
+  formSubmitButton.addEventListener('click', e => {
+    e.preventDefault();
+    console.log('submitted');
+  });
+  reviewForm.appendChild(formSubmitButton);
+
+  reviewFormContainer.appendChild(reviewForm);
+  container.appendChild(reviewFormContainer);
+}
+
+/**
+ * Check if form is valid and enabled button if true
+ */
+window.checkFormValidation = () => {
+  const form = document.getElementById('review-form');
+  const name = form['reviewer-name'].value;
+  const comments = form['review-body'].value;
+  const formButton = document.getElementById('review-submit-button');
+  formButton.disabled = (name && comments) ? false: true;
+}
+
+/**
+ * Handle review form submission
+ */
+window.handleReviewSubmission = () => {
+  const form = document.getElementById('review-form');
+  const name = form['reviewer-name'].value;
+  const rating = form['rating'].value;
+  const comments = form['review-body'].value;
+  const review = {
+    "restaurant_id": self.restaurant.id,
+    "name": name,
+    "rating": rating,
+    "comments": comments
+  };
+  DBHelper.addReview(review);
 }
 
 /**
@@ -152,13 +296,14 @@ window.createReviewHTML = (review) => {
   cardHeader.appendChild(name);
 
   const date = document.createElement('time');
-  date.innerHTML = review.date;
+  const unixTimestamp = new Date(review.updatedAt);
+  date.innerHTML = getFormattedTimestamp(unixTimestamp);
   cardHeader.appendChild(date);
 
   li.appendChild(cardHeader);
 
   const rating = document.createElement('p');
-  rating.innerHTML = `Rating: ${review.rating}`;
+  rating.innerHTML = `Rating: ${'★'.repeat(review.rating)}`;
   cardBody.appendChild(rating);
 
   const comments = document.createElement('article');
@@ -168,6 +313,18 @@ window.createReviewHTML = (review) => {
   li.appendChild(cardBody);
 
   return li;
+}
+
+/**
+ * Convert unix timestamp to a useable format
+ */
+window.getFormattedTimestamp = unixTimestamp => {
+  const day = unixTimestamp.getDate();
+  const month = unixTimestamp.getMonth();
+  const year = unixTimestamp.getFullYear();
+  const monthStrings = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  return `${monthStrings[month]} ${day}, ${year}`;
 }
 
 /**
