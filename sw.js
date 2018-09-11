@@ -7,10 +7,14 @@ const cacheImages = `${cacheBaseName}-images`;
 const version = 'v1.0.0';
 let initComplete = false;
 
-const dbPromise = idb.open('restaurantDB', 1, upgradeDb => {
+const dbPromise = idb.open('restaurantDB', 2, upgradeDb => {
     switch(upgradeDb.oldVersion) {
       case 0:
         const store = upgradeDb.createObjectStore('restaurants', {
+          keyPath: 'id'
+        });
+      case 1:
+        const reviewStore = upgradeDb.createObjectStore('reviews', {
           keyPath: 'id'
         });
     }
@@ -48,7 +52,13 @@ self.addEventListener('install', event => {
  */
 const handleDBRequest = (event, id) => {
   let url = event.request.url;
-  if (id != -1) url = `${event.request.url}/${id}`;
+  console.log(event.request);
+  const parseURL = new URL(event.request.url);
+  const path = parseURL.pathname.substring(1, parseURL.pathname.length);
+  if (path == 'restaurants' && id != -1) {
+    url = `${event.request.url}/${id}`;
+  }
+
   let newHeaders = new Headers();
   for (let oldHeader of event.request.headers.entries()) {
     newHeaders.append(oldHeader[0], oldHeader[1]);
@@ -60,6 +70,7 @@ const handleDBRequest = (event, id) => {
    * url based on if an id for a detail page is present
    * and add headers for JSON
    */
+  console.log(`For path ${path}, using url ${url}`);
   const newRequest = new Request(url, {
     method: event.request.method,
     headers: newHeaders,
@@ -75,15 +86,18 @@ const handleDBRequest = (event, id) => {
 
   event.respondWith(
     dbPromise.then(db => {
-      const idbRead = db.transaction('restaurants').objectStore('restaurants');
+      console.log(path);
+      const idbRead = db.transaction(path).objectStore(path);
       // get all idb records for restaurants
       return idbRead.getAll()
         .then(response => {
+          console.log('should be', path, id);
+          console.log(response);
           /**
            *if id is not -1, a single record is requested,
            * return that record from idb if present
            */
-          if (id != -1 && response && response.length) return response.find(r => r.id == id);
+          if ((path == 'restaurants' && id != -1) && response && response.length) return response.find(r => r.id == id);
           // if requesting all records and not first page load, return all idb records
           else if (initComplete && response && response.length) return response;
 
@@ -92,11 +106,11 @@ const handleDBRequest = (event, id) => {
             .then(networkResponse => networkResponse.json())
             .then(parsed => {
               // add records to idb
-              const idbWrite = db.transaction('restaurants', 'readwrite').objectStore('restaurants');
+              const idbWrite = db.transaction(path, 'readwrite').objectStore(path);
               if (Array.isArray(parsed)) {
                 initComplete = true;
-                parsed.forEach(restaurant => {
-                  idbWrite.put(restaurant);
+                parsed.forEach(record => {
+                  idbWrite.put(record);
                 });
               } else {
                 idbWrite.put(parsed);
