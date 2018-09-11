@@ -358,6 +358,7 @@ select:focus {
 #restaurant-img img {
 	display: block;
 	height: 100%;
+	width: 100%;
 }
 
 #restaurant-address {
@@ -402,6 +403,112 @@ select:focus {
   letter-spacing: 1px;
 	width: 100%;
 	text-align: center;
+}
+
+#reviews-container p {
+	margin-left: 1%;
+}
+
+.review-form-container {
+	display: flex;
+	flex-wrap: wrap;
+	width: 100%;
+	margin-bottom: 5%;
+	padding-bottom: 5%;
+	border: 2px solid #2b2b2b;
+	border-radius: 15px;
+	line-height: 1.8em;
+}
+
+.review-form-container h4 {
+	color: #ffb200;
+	background-color: #2b2b2b;
+	padding: 0.4em 0;
+	border-radius: 10px 10px 0 0;
+	font-size: 1.6em;
+	font-weight: 300;
+	width: 100%;
+	text-align: center;
+}
+
+.review-form-container #review-form {
+	display: flex;
+	flex-direction: column;
+	padding: 0 3%;
+	width: 100%;
+	font-size: 1.3em;
+}
+
+.review-name-container {
+	display: flex;
+	flex-wrap: nowrap;
+	justify-content: space-between;
+	padding-bottom: 5%;
+}
+
+.review-name-container #reviewer-name {
+	width: 50%;
+}
+
+.review-rating-slider-container {
+	display: flex;
+	flex-wrap: nowrap;
+	justify-content: space-between;
+	padding-bottom: 5%;
+}
+
+.review-rating-slider-container #rating-slider-label {
+	display: flex;
+	flex-direction: column;
+	flex-wrap: nowrap;
+}
+
+.review-rating-slider-container #rating {
+	width: 50%;
+}
+
+.review-rating-slider-container #slider-value {
+	letter-spacing: 5px;
+	font-size: 1.2em;
+	width: 100%;
+	color: #ffb200;
+	text-shadow: 2px 2px 2px #2b2b2b;
+}
+
+.review-body-container {
+	display: flex;
+	flex-wrap: nowrap;
+	justify-content: space-between;
+	padding-bottom: 10%;
+}
+
+.review-body-container #review-body {
+	width: 50%;
+	height: 80px;
+	min-height: 48px;
+}
+
+.review-form-container button {
+	margin: 0 auto;
+	font-size: 1.5em;
+	min-height: 48px;
+	width: 30%;
+	border-radius: 15px;
+	border: 2px solid rgb(43, 43, 43);
+	color: rgb(43, 43, 43);
+	background-color: #ffb200;
+	box-shadow: 2px 2px 2px rgba(43, 43, 43, 0.8);
+}
+
+.review-form-container button:active {
+	transform: translate(2px, 2px);
+	box-shadow: none;
+}
+
+.review-form-container button:disabled {
+	color: rgba(43, 43, 43);
+	background-color: rgba(43, 43, 43, 0.2);
+	border-color: rgba(43, 43, 43, 0.2);
 }
 
 #reviews-list {
@@ -451,6 +558,7 @@ select:focus {
 	padding: 10px 20px;
 	background-color: #2b2b2b;
 	display: flex;
+	flex-wrap: nowrap;
 	justify-content: space-between;
 	align-items: center;
 }
@@ -467,6 +575,7 @@ time {
 }
 
 .review-card-header time {
+	text-align: right;
 	color: #d8d8d8;
 	font-size: 1.2em;
 }
@@ -499,7 +608,8 @@ time {
 /* ======================== Media Queries ======================== */
 @media screen and (min-width: 480px) {
 	#restaurant-container,
-	#reviews-list li {
+	#reviews-list li,
+	.review-form-container {
 		margin-left: 10%;
 		margin-right: 10%;
 	}
@@ -511,7 +621,6 @@ time {
 		margin-left: 10%;
 		margin-right: 10%;
 	}
-
 }
 
 @media screen and (min-width: 700px) and (max-width: 850px) {
