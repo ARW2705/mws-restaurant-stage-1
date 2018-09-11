@@ -118,6 +118,16 @@ gulp.task('styles', ['clean-dist'], () => {
     .pipe(browserSync.stream());
 });
 
+gulp.task('update-styles', () => {
+  return gulp.src(paths.css.src)
+    .pipe(autoprefixer({
+      browsers: ['last 2 versions']
+    }))
+    .pipe(cleanCSS())
+    .pipe(gulp.dest(paths.css.dest))
+    .pipe(browserSync.stream());
+});
+
 
 /**
  * Image tasks
@@ -204,7 +214,7 @@ gulp.task('manifest', ['clean-dist'], () => {
  */
 gulp.task('default', tasks, () => {
   gulp.watch('*.html', ['update-html']);
-  gulp.watch('css/**/*.css', ['styles']);
+  gulp.watch('css/**/*.css', ['update-styles']);
   gulp.watch('dist/*.html').on('change', browserSync.reload);
 
   browserSync.init({
