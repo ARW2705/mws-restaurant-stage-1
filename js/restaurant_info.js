@@ -157,8 +157,10 @@ window.createReviewForm = () => {
   const reviewForm = document.createElement('form');
   reviewForm.id = 'review-form';
   reviewForm.name = 'review-form';
+  reviewForm.setAttribute('data-db-id', '-1');
   const title = document.createElement('h4');
   title.innerHTML = "Submit a Review";
+  title.id = 'review-input-title';
   reviewFormContainer.appendChild(title);
 
   // review name label and input field
@@ -237,6 +239,20 @@ window.createReviewForm = () => {
 
   reviewForm.appendChild(reviewTextContainer);
 
+  // form buttons container
+  const formButtonsContainer = document.createElement('div');
+  formButtonsContainer.className = 'review-buttons-container';
+
+  // review deletion button, usually hidden
+  const deleteReviewButton = document.createElement('button');
+  deleteReviewButton.innerHTML = 'Remove';
+  deleteReviewButton.id = 'review-delete-button';
+  deleteReviewButton.addEventListener('click', e => {
+    e.preventDefault();
+    console.log('deleting review for', e.target);
+  });
+  formButtonsContainer.appendChild(deleteReviewButton);
+
   // form submission button
   const formSubmitButton = document.createElement('button');
   formSubmitButton.innerHTML = 'Submit';
@@ -244,12 +260,42 @@ window.createReviewForm = () => {
   formSubmitButton.disabled = true;
   formSubmitButton.addEventListener('click', e => {
     e.preventDefault();
-    console.log('submitted');
+    console.log('Submitting review');
+    handleReviewSubmission();
   });
-  reviewForm.appendChild(formSubmitButton);
+  formButtonsContainer.appendChild(formSubmitButton);
+
+  reviewForm.appendChild(formButtonsContainer);
 
   reviewFormContainer.appendChild(reviewForm);
   container.appendChild(reviewFormContainer);
+}
+
+/**
+ * Transfer information from posted review into review form
+ * in order to make edits
+ */
+window.populateReviewForm = elem => {
+  const title = document.getElementById('review-input-title');
+  title.innerHTML = 'Edit your Review';
+  const form = document.getElementById('review-form');
+  const id = elem.getAttribute('data-db-id');
+  const ps = elem.getElementsByTagName('p');
+  const name = ps[0].innerHTML;
+  const rawRating = ps[1].innerHTML;
+  const rating = rawRating.match(/[★]/g).length;
+  const comments = elem.getElementsByTagName('article')[0].innerHTML;
+  form['reviewer-name'].value = name;
+  form['rating'].value = rating;
+  form['review-body'].value = comments;
+  const ratingLabel = document.getElementById('slider-value');
+  ratingLabel.innerHTML = '★'.repeat(rating);
+  form.setAttribute('data-db-id', id);
+  const submitButton = document.getElementById('review-submit-button');
+  submitButton.innerHTML = 'Edit';
+  const deleteButton = document.getElementById('review-delete-button');
+  deleteButton.style.display = 'inline-block';
+  checkFormValidation();
 }
 
 /**
@@ -268,8 +314,9 @@ window.checkFormValidation = () => {
  */
 window.handleReviewSubmission = () => {
   const form = document.getElementById('review-form');
+  const id = form.getAttribute('data-db-id');
   const name = form['reviewer-name'].value;
-  const rating = form['rating'].value;
+  const rating = parseInt(form['rating'].value);
   const comments = form['review-body'].value;
   const review = {
     "restaurant_id": self.restaurant.id,
@@ -277,7 +324,80 @@ window.handleReviewSubmission = () => {
     "rating": rating,
     "comments": comments
   };
-  DBHelper.addReview(review);
+  // if an id greater than 0 was specified, a review is being updated
+  if (id != -1) {
+    const update = DBHelper.updateReview(id, review);
+    update.then(_update => {
+      if (_update) {
+        console.log('Review successfully updated');
+        updateReviewHTML(0, _update);
+      } else {
+        console.log('Error updating review');
+      }
+    })
+  // otherwise a new review is being created
+  } else {
+    const newReview = DBHelper.addNewReview(review);
+    newReview.then(_newReview => {
+      if (_newReview) {
+        console.log('Review successfully added', _newReview);
+        self.reviews.push(_newReview);
+        updateReviewHTML(1, _newReview);
+      } else {
+        console.log('Error creating new review');
+      }
+    });
+  }
+  resetReviewForm();
+}
+
+/**
+ * Delete selected review from database
+ */
+window.removeReview = id => {
+
+}
+
+/**
+ * Update listed reviews after add/remove
+ */
+window.updateReviewHTML = (amountChanged, review) => {
+  const reviews = document.getElementById('reviews-list');
+  switch (amountChanged) {
+    case -1: // a review was deleted
+
+      break;
+    case 0: // review was updated, no change in amount
+      console.log('Updating review list');
+      for (let i=0; i < reviews.children.length; i++) {
+        const child = reviews.children[i];
+        if (child.getAttribute('data-db-id') == review.id) {
+          const ps = child.getElementsByTagName('p');
+          ps[0].innerHTML = review.name;
+          ps[1].innerHTML = 'Rating: ' + '★'.repeat(review.rating);
+          child.getElementsByTagName('article')[0].innerHTML = review.comments;
+          child.getElementsByTagName('time')[0].innerHTML = getFormattedTimestamp(review.updatedAt);
+          break;
+        }
+      }
+      break;
+    case 1: // a review was added
+      console.log('Appending to review list');
+      reviews.appendChild(createReviewHTML(review));
+      break;
+    default:
+      break;
+  }
+}
+
+/**
+ * Clear form fields and change title
+ */
+window.resetReviewForm = () => {
+  const title = document.getElementById('review-input-title');
+  title.innerHTML = 'Submit a Review';
+  const form = document.getElementById('review-form');
+  form.reset();
 }
 
 /**
@@ -285,6 +405,7 @@ window.handleReviewSubmission = () => {
  */
 window.createReviewHTML = (review) => {
   const li = document.createElement('li');
+  li.setAttribute('data-db-id', review.id);
 
   const cardHeader = document.createElement('div');
   cardHeader.className = 'review-card-header';
@@ -296,8 +417,7 @@ window.createReviewHTML = (review) => {
   cardHeader.appendChild(name);
 
   const date = document.createElement('time');
-  const unixTimestamp = new Date(review.updatedAt);
-  date.innerHTML = getFormattedTimestamp(unixTimestamp);
+  date.innerHTML = getFormattedTimestamp(review.updatedAt);
   cardHeader.appendChild(date);
 
   li.appendChild(cardHeader);
@@ -305,6 +425,16 @@ window.createReviewHTML = (review) => {
   const rating = document.createElement('p');
   rating.innerHTML = `Rating: ${'★'.repeat(review.rating)}`;
   cardBody.appendChild(rating);
+
+  const editButton = document.createElement('a');
+  editButton.innerHTML = '✎';
+  editButton.id = 'review-edit-button';
+  editButton.href = '#review-form';
+  editButton.addEventListener('click', e => {
+    const elem = e.target.closest('li');
+    populateReviewForm(elem);
+  });
+  cardBody.appendChild(editButton);
 
   const comments = document.createElement('article');
   comments.innerHTML = review.comments;
@@ -318,10 +448,11 @@ window.createReviewHTML = (review) => {
 /**
  * Convert unix timestamp to a useable format
  */
-window.getFormattedTimestamp = unixTimestamp => {
-  const day = unixTimestamp.getDate();
-  const month = unixTimestamp.getMonth();
-  const year = unixTimestamp.getFullYear();
+window.getFormattedTimestamp = timestamp => {
+  let _timestamp = new Date(timestamp);
+  const day = _timestamp.getDate();
+  const month = _timestamp.getMonth();
+  const year = _timestamp.getFullYear();
   const monthStrings = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return `${monthStrings[month]} ${day}, ${year}`;
