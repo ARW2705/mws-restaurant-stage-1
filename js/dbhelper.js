@@ -217,7 +217,7 @@ class DBHelper {
   }
 
   /**
-   * Get review by id
+   * Get review by its id
    */
   static getReviewById(id, callback) {
     DBHelper.getReviews((error, reviews) => {
@@ -241,13 +241,53 @@ class DBHelper {
   /**
    * Perform POST request to add a review
    */
-  static addReview(review) {
-    // const fetchHeaders = new Headers();
-    // fetchHeaders.append('content-type', 'application/json');
-    // fetch(DBHelper.REVIEW_DB_URL, {
-    //   method: 'POST',
-    //   header: fetchHeaders
-    // })
+  static addNewReview(review) {
+    const fetchHeaders = new Headers();
+    fetchHeaders.append('content-type', 'application/json');
+    return fetch(DBHelper.REVIEW_DB_URL, {
+      method: 'POST',
+      header: fetchHeaders,
+      body: JSON.stringify(review)
+    })
+    .then(res => {
+      console.log(res);
+      if (res.status == 200) {
+        return res.json()
+          .then(data => {
+            console.log(data);
+            return data;
+          })
+          .catch(err => console.log('An error occured parsing POST response', err));
+        } else {
+          console.log('POST failed', res.status, res.statusText);
+        }
+    })
+    .catch(err => console.log('An error occured during POST request', err));
+  }
+
+  /**
+   * Perform PUT request to update a review
+   */
+  static updateReview(id, review) {
+    const fetchHeaders = new Headers();
+    fetchHeaders.append('content-type', 'application/json');
+    return fetch(`${DBHelper.REVIEW_DB_URL}/${id}`, {
+      method: 'PUT',
+      header: fetchHeaders,
+      body: JSON.stringify(review)
+    })
+    .then(res => {
+      console.log(res);
+      if (res.status == 200) {
+        return res.json()
+          .then(data => {
+            console.log(data);
+            return data;
+          })
+          .catch(err => console.log('An error occured parsing PUT response', err));
+      }
+    })
+    .catch(err => console.log('An error occured during PUT request', err));
   }
 
 }
