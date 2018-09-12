@@ -78,12 +78,20 @@
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCozwim3IQlmfOUwATf2hSISzvUR-3W5HY&libraries=places&callback=initMap"></script>
   <!-- Register service worker -->
   <script>
-    if (navigator.serviceWorker) {
+    if (navigator.serviceWorker && window.SyncManager) {
       navigator.serviceWorker.register('sw.js', {scope: './'})
         .then(registration => {
           if (!navigator.serviceWorker.controller) return;
           console.log('service worker registered!');
+          return navigator.serviceWorker.ready;
+        })
+        .then(registration => {
+          registration.sync.register('bg-sync')
+            .then(() => console.log('background sync registered!'));
         });
+      // navigator.serviceWorker.register.ready.then(function(swRegistration) {
+      //   return swRegistration.sync.register('bg-sync');
+      // });
     }
   </script>
   <!-- End Scripts -->
