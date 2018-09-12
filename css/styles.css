@@ -420,7 +420,7 @@ select:focus {
 	line-height: 1.8em;
 }
 
-.review-form-container h4 {
+.review-form-container #review-input-title {
 	color: #ffb200;
 	background-color: #2b2b2b;
 	padding: 0.4em 0;
@@ -488,24 +488,41 @@ select:focus {
 	min-height: 48px;
 }
 
-.review-form-container button {
-	margin: 0 auto;
+.review-buttons-container {
+	display: flex;
+	justify-content: space-around;
+}
+
+.review-buttons-container #review-submit-button {
+	padding: 1% 2% 0;
 	font-size: 1.5em;
 	min-height: 48px;
-	width: 30%;
 	border-radius: 15px;
-	border: 2px solid rgb(43, 43, 43);
-	color: rgb(43, 43, 43);
-	background-color: #ffb200;
+	border: 2px solid #2b2b2b;
+	color: #2b2b2b;
+	background-color: #62e542;
 	box-shadow: 2px 2px 2px rgba(43, 43, 43, 0.8);
 }
 
-.review-form-container button:active {
+.review-buttons-container #review-delete-button {
+	display: none;
+	padding: 1% 2% 0;
+	font-size: 1.5em;
+	min-height: 48px;
+	border-radius: 15px;
+	border: 2px solid #2b2b2b;
+	color: #fdfdfd;
+	background-color: #e80000;
+	box-shadow: 2px 2px 2px rgba(43, 43, 43, 0.8);
+}
+
+.review-buttons-container #review-submit-button:active,
+.review-buttons-container #review-delete-button:active {
 	transform: translate(2px, 2px);
 	box-shadow: none;
 }
 
-.review-form-container button:disabled {
+.review-buttons-container #review-submit-button:disabled {
 	color: rgba(43, 43, 43);
 	background-color: rgba(43, 43, 43, 0.2);
 	border-color: rgba(43, 43, 43, 0.2);
@@ -585,6 +602,10 @@ time {
 	height: 90%;
 	padding: 0 10px 20px;
 	font-size: 1.2em;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: space-between;
 }
 
 .review-card-body p {
@@ -596,12 +617,29 @@ time {
 	font-size: 1.1em;
 	font-weight: 600;
 	letter-spacing: 2px;
+	margin-top: 5%;
+	margin-bottom: 0;
+}
+
+#review-edit-button {
+	color: #2b2b2b;
+	font-size: 2.5em;
+	height: 1em;
+	margin-top: 3%;
+	cursor: pointer;
+}
+
+#review-edit-button:focus {
+	font-size: 2.5em !important;
 }
 
 .review-card-body article {
+	min-height: 48px;
 	font-size: 1em;
 	font-weight: 500;
 	line-height: normal;
+	padding: 2%;
+	width: 100%;
 }
 
 
