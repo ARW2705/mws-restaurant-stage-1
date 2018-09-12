@@ -45,12 +45,33 @@ self.addEventListener('install', event => {
 });
 
 /**
+ * Parse event routing and return data needed to determine
+ * which handler to use
+ */
+const createRoutingObject = event => {
+  let id = -1;
+  const url = new URL(event.request.url);
+  const ref = event.request.referrer;
+  if (ref.indexOf('restaurant.html') != -1) {
+    const index = ref.indexOf('=') + 1;
+    id = parseInt(ref.slice(index));
+  }
+  const method = event.request.method.toUpperCase();
+  return {
+    url: url,
+    port: url.port,
+    id: id,
+    method: method
+  };
+}
+
+/**
  * Handle fetch event for database
  * get from idb and fallback to network
  * if request from detail page, use id in url to fetch single record
  * else get all records - force fetch on first call for all records
  */
-const handleDBRequest = (event, id) => {
+const handleDBGetRequest = (event, id) => {
   let url = event.request.url;
   console.log(event.request);
   const parseURL = new URL(event.request.url);
@@ -70,7 +91,6 @@ const handleDBRequest = (event, id) => {
    * url based on if an id for a detail page is present
    * and add headers for JSON
    */
-  console.log(`For path ${path}, using url ${url}`);
   const newRequest = new Request(url, {
     method: event.request.method,
     headers: newHeaders,
@@ -86,13 +106,10 @@ const handleDBRequest = (event, id) => {
 
   event.respondWith(
     dbPromise.then(db => {
-      console.log(path);
       const idbRead = db.transaction(path).objectStore(path);
       // get all idb records for restaurants
       return idbRead.getAll()
         .then(response => {
-          console.log('should be', path, id);
-          console.log(response);
           /**
            *if id is not -1, a single record is requested,
            * return that record from idb if present
@@ -124,6 +141,46 @@ const handleDBRequest = (event, id) => {
     })
   );
 };
+
+/**
+ * Handle fetch event for POST, PUT, and DELETE methods
+ * Update IDB with server response
+ * Continue with fetch request and send response back to caller
+ */
+const handleDBChangeRequest = (event, id) => {
+  console.log(event.request);
+  const parseURL = new URL(event.request.url);
+  console.log(parseURL);
+  let path = parseURL.pathname.substring(1, parseURL.pathname.length);
+  if (path.includes('/')) path = path.split('/')[0];
+  console.log(path);
+  const queryParams = parseURL.searchParams;
+  console.log(queryParams);
+  const method = event.request.method;
+  event.respondWith(
+    fetch(event.request)
+      .then(res => {
+        console.log('handleDBChangeRequest fetch finished');
+        if ((method == 'POST' && res.status == 201) || (method == 'PUT' && res.status == 200)) {
+          return res.json()
+            .then(data => {
+              return dbPromise.then(db => {
+                console.log('writing to idb', data);
+                const idbWrite = db.transaction(path, 'readwrite').objectStore(path);
+                idbWrite.put(data);
+                return data;
+              })
+              .catch(err => console.log(`${path} idb error`, err));
+            })
+            .catch(err => console.log(`${path} post response parse error`, err));
+        } else {
+          console.log('post failed with status', res.status, res.statusText);
+        }
+      })
+      .then(response => new Response(JSON.stringify(response)))
+      .catch(err => console.log('reviews post request error', err))
+  );
+}
 
 /**
  * Handle fetch event for assets
@@ -164,17 +221,15 @@ const handleAssetRequest = event => {
  * or a request for assets. port 1337 == db, port 8000 == assets
  */
 self.addEventListener('fetch', event => {
-  let id = -1;
-  const url = new URL(event.request.url);
-  const port = url.port;
-  if (port == "1337") {
-    const ref = event.request.referrer;
-    if (ref.indexOf('restaurant.html') != -1) {
-      const index = ref.indexOf('=') + 1;
-      id = parseInt(ref.slice(index));
+  const routing = createRoutingObject(event);
+  if (routing.port == "1337") {
+    if (routing.method == 'GET') {
+      handleDBGetRequest(event, routing.id);
+    } else {
+      console.log(`${routing.method} request made by ${routing.url}`);
+      handleDBChangeRequest(event, routing.id);
     }
-    handleDBRequest(event, id);
-  } else if (port == "8000") {
+  } else if (routing.port == "8000") {
     handleAssetRequest(event);
   }
 });
@@ -199,6 +254,19 @@ self.addEventListener('activate', event => {
       .catch(err => console.log('uh-oh', err))
   );
 });
+
+/**
+ * Handle background sync
+ */
+self.addEventListener('sync', event => {
+  if (event.tag === 'bg-sync') {
+    console.log('sync event');
+    // event.waitUntil(
+    //   const routing = createRoutingObject(event);
+    //   handleDBChangeRequest(event, event.id);
+    // );
+  }
+})
 
 /**
  * Handle service worker error event
