@@ -205,7 +205,6 @@ class DBHelper {
       if (error) {
         callback(error, null);
       } else {
-        console.log('got reviews', reviews);
         const _reviews = (Array.isArray(reviews)) ? reviews.filter(review => review.restaurant_id == id): reviews;
         if (_reviews) {
           callback(null, _reviews);
@@ -235,10 +234,6 @@ class DBHelper {
   }
 
   /**
-   * Get favorited restaurants
-   */
-
-  /**
    * Perform POST request to add a review
    */
   static addNewReview(review) {
@@ -250,19 +245,17 @@ class DBHelper {
       body: JSON.stringify(review)
     })
     .then(res => {
-      console.log(res);
       if (res.status == 200) {
         return res.json()
           .then(data => {
-            console.log(data);
             return data;
           })
-          .catch(err => console.log('An error occured parsing POST response', err));
+          .catch(err => console.log('An error occurred parsing POST response', err));
         } else {
-          console.log('POST failed', res.status, res.statusText);
+          console.log('POST request failed', res.status, res.statusText);
         }
     })
-    .catch(err => console.log('An error occured during POST request', err));
+    .catch(err => console.log('An error occurred during POST request', err));
   }
 
   /**
@@ -277,17 +270,32 @@ class DBHelper {
       body: JSON.stringify(review)
     })
     .then(res => {
-      console.log(res);
       if (res.status == 200) {
         return res.json()
           .then(data => {
-            console.log(data);
             return data;
           })
-          .catch(err => console.log('An error occured parsing PUT response', err));
+          .catch(err => console.log('An error occurred parsing PUT response', err));
       }
     })
-    .catch(err => console.log('An error occured during PUT request', err));
+    .catch(err => console.log('An error occurred during PUT request', err));
   }
+
+  static deleteReview(id) {
+    return fetch(`${DBHelper.REVIEW_DB_URL}/${id}`, {
+      method: 'DELETE',
+    })
+    .then(res => {
+      console.log(res);
+      if (res.status == 200) {
+        return true;
+      }
+    })
+    .catch(err => console.log('An error occurred during DELETE request', err));
+  }
+
+  /**
+   * Get favorited restaurants
+   */
 
 }
