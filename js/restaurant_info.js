@@ -148,7 +148,6 @@ window.fillReviewsHTML = (reviews = self.reviews) => {
 /**
  * Create form to submit a review
  */
-
 window.createReviewForm = () => {
   const container = document.getElementById('reviews-container');
   const reviewFormContainer = document.createElement('div');
@@ -249,7 +248,9 @@ window.createReviewForm = () => {
   deleteReviewButton.id = 'review-delete-button';
   deleteReviewButton.addEventListener('click', e => {
     e.preventDefault();
-    console.log('deleting review for', e.target);
+    const _form = document.getElementById('review-form');
+    const _id = _form.getAttribute('data-db-id');
+    removeReview(_id);
   });
   formButtonsContainer.appendChild(deleteReviewButton);
 
@@ -260,7 +261,6 @@ window.createReviewForm = () => {
   formSubmitButton.disabled = true;
   formSubmitButton.addEventListener('click', e => {
     e.preventDefault();
-    console.log('Submitting review');
     handleReviewSubmission();
   });
   formButtonsContainer.appendChild(formSubmitButton);
@@ -329,7 +329,6 @@ window.handleReviewSubmission = () => {
     const update = DBHelper.updateReview(id, review);
     update.then(_update => {
       if (_update) {
-        console.log('Review successfully updated');
         updateReviewHTML(0, _update);
       } else {
         console.log('Error updating review');
@@ -340,7 +339,6 @@ window.handleReviewSubmission = () => {
     const newReview = DBHelper.addNewReview(review);
     newReview.then(_newReview => {
       if (_newReview) {
-        console.log('Review successfully added', _newReview);
         self.reviews.push(_newReview);
         updateReviewHTML(1, _newReview);
       } else {
@@ -355,7 +353,11 @@ window.handleReviewSubmission = () => {
  * Delete selected review from database
  */
 window.removeReview = id => {
-
+  const deletion = DBHelper.deleteReview(id);
+  if (deletion) {
+    resetReviewForm();
+    updateReviewHTML(-1, id);
+  }
 }
 
 /**
@@ -365,10 +367,13 @@ window.updateReviewHTML = (amountChanged, review) => {
   const reviews = document.getElementById('reviews-list');
   switch (amountChanged) {
     case -1: // a review was deleted
-
+      for (let i=0; i < reviews.children.length; i++) {
+        if (reviews.children[i].getAttribute('data-db-id') == review) {
+          reviews.removeChild(reviews.children[i]);
+        }
+      }
       break;
     case 0: // review was updated, no change in amount
-      console.log('Updating review list');
       for (let i=0; i < reviews.children.length; i++) {
         const child = reviews.children[i];
         if (child.getAttribute('data-db-id') == review.id) {
@@ -382,7 +387,6 @@ window.updateReviewHTML = (amountChanged, review) => {
       }
       break;
     case 1: // a review was added
-      console.log('Appending to review list');
       reviews.appendChild(createReviewHTML(review));
       break;
     default:
