@@ -151,35 +151,53 @@ const handleDBChangeRequest = (event, id) => {
   console.log(event.request);
   const parseURL = new URL(event.request.url);
   console.log(parseURL);
-  let path = parseURL.pathname.substring(1, parseURL.pathname.length);
-  if (path.includes('/')) path = path.split('/')[0];
+  let pathname = parseURL.pathname.substring(1, parseURL.pathname.length);
+  let path = (pathname.includes('/')) ? pathname.split('/')[0]: pathname;
   console.log(path);
   const queryParams = parseURL.searchParams;
   console.log(queryParams);
   const method = event.request.method;
-  event.respondWith(
-    fetch(event.request)
-      .then(res => {
-        console.log('handleDBChangeRequest fetch finished');
-        if ((method == 'POST' && res.status == 201) || (method == 'PUT' && res.status == 200)) {
-          return res.json()
-            .then(data => {
-              return dbPromise.then(db => {
-                console.log('writing to idb', data);
-                const idbWrite = db.transaction(path, 'readwrite').objectStore(path);
-                idbWrite.put(data);
-                return data;
+  if (method == 'POST' || method == 'PUT') {
+    event.respondWith(
+      fetch(event.request)
+        .then(res => {
+          console.log('handleDBChangeRequest fetch finished');
+          if ((method == 'POST' && res.status == 201) || (method == 'PUT' && res.status == 200)) {
+            return res.json()
+              .then(data => {
+                return dbPromise.then(db => {
+                  console.log('writing to idb', data);
+                  const idbWrite = db.transaction(path, 'readwrite').objectStore(path);
+                  idbWrite.put(data);
+                  return data;
+                })
+                .catch(err => console.log(`${path} idb error`, err));
               })
-              .catch(err => console.log(`${path} idb error`, err));
+              .catch(err => console.log(`${path} post response parse error`, err));
+          } else {
+            console.log(`An error occurred during ${method} request, `, res.statusText);
+          }
+        })
+        .then(response => new Response(JSON.stringify(response)))
+        .catch(err => console.log('reviews post request error', err))
+      );
+  } else if (method == 'DELETE') {
+    const key = pathname.split('/')[1];
+    event.respondWith(
+      fetch(event.request)
+        .then(res => {
+          if (res.status == 200) {
+            return dbPromise.then(db => {
+              const idbWrite = db.transaction(path, 'readwrite').objectStore(path);
+              idbWrite.delete(parseInt(key));
             })
-            .catch(err => console.log(`${path} post response parse error`, err));
-        } else {
-          console.log('post failed with status', res.status, res.statusText);
-        }
-      })
-      .then(response => new Response(JSON.stringify(response)))
-      .catch(err => console.log('reviews post request error', err))
-  );
+            .catch(err => console.log('IDB deletion error', err));
+          }
+        })
+        .then(response => new Response(JSON.stringify(response)))
+        .catch(err => console.log('Deletion fetch error', err))
+    )
+  }
 }
 
 /**
@@ -229,7 +247,7 @@ self.addEventListener('fetch', event => {
       console.log(`${routing.method} request made by ${routing.url}`);
       handleDBChangeRequest(event, routing.id);
     }
-  } else if (routing.port == "8000") {
+  } else if (routing.port == "8000" || routing.port == "3000") {
     handleAssetRequest(event);
   }
 });
