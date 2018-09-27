@@ -13,11 +13,9 @@ let loadCount = 0;
 document.addEventListener('DOMContentLoaded', (event) => {
   fetchNeighborhoods();
   fetchCuisines();
-  console.log('loaded');
 });
 
 window.addEventListener('load', event => {
-  console.log('Observing viewport');
   const images = document.querySelectorAll('.restaurant-img');
   const options = {
     rootMargin: '50px 0px',
@@ -221,11 +219,41 @@ window.createRestaurantHTML = (restaurant) => {
   address.innerHTML = restaurant.address;
   li.append(address);
 
+  const actionButtonsContainer = document.createElement('div');
+  actionButtonsContainer.className = 'action-buttons';
+  li.append(actionButtonsContainer);
+
   const more = document.createElement('a');
   more.innerHTML = 'View Details';
   more.href = DBHelper.urlForRestaurant(restaurant);
   more.setAttribute('aria-label', `view-details for the restaurant, ${restaurant.name}`);
-  li.append(more)
+  actionButtonsContainer.append(more)
+
+  const favorite = document.createElement('button');
+  favorite.innerHTML = '❤';
+  favorite.className = 'favorite-btn';
+  let ariaAction = 'Add';
+  let ariaPrep = 'to';
+  if (restaurant.is_favorite == 'true') {
+    favorite.classList.add('faved');
+    ariaAction = 'Remove';
+    ariaPrep = 'from';
+  }
+  favorite.setAttribute('aria-label', `${ariaAction} ${restaurant.name} ${ariaPrep} favorites`);
+  favorite.addEventListener('click', e => {
+    e.preventDefault();
+    e.target.classList.toggle('faved');
+    if (e.target.classList.contains('faved')) {
+      ariaAction = 'Remove';
+      ariaPrep = 'from';
+    } else {
+      ariaAction = 'Add';
+      ariaPrep = 'to';
+    }
+    favorite.setAttribute('aria-label', `${ariaAction} ${restaurant.name} ${ariaPrep} favorites`);
+    DBHelper.updateFavorites(restaurant.id, e.target.classList.contains('faved'));
+  });
+  actionButtonsContainer.append(favorite);
 
   return li
 }
