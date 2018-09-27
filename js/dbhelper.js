@@ -250,12 +250,12 @@ class DBHelper {
           .then(data => {
             return data;
           })
-          .catch(err => console.log('An error occurred parsing POST response', err));
+          .catch(err => console.log('An error occurred parsing review POST response', err));
         } else {
           console.log('POST request failed', res.status, res.statusText);
         }
     })
-    .catch(err => console.log('An error occurred during POST request', err));
+    .catch(err => console.log('An error occurred during review POST request', err));
   }
 
   /**
@@ -275,10 +275,10 @@ class DBHelper {
           .then(data => {
             return data;
           })
-          .catch(err => console.log('An error occurred parsing PUT response', err));
+          .catch(err => console.log('An error occurred parsing review PUT response', err));
       }
     })
-    .catch(err => console.log('An error occurred during PUT request', err));
+    .catch(err => console.log('An error occurred during review PUT request', err));
   }
 
   static deleteReview(id) {
@@ -286,16 +286,29 @@ class DBHelper {
       method: 'DELETE',
     })
     .then(res => {
-      console.log(res);
       if (res.status == 200) {
         return true;
       }
     })
-    .catch(err => console.log('An error occurred during DELETE request', err));
+    .catch(err => console.log('An error occurred during review DELETE request', err));
   }
 
   /**
    * Get favorited restaurants
    */
 
+  /**
+   * Update favorited restaurants
+   */
+  static updateFavorites(id, isFavorite) {
+      fetch(`${DBHelper.DATABASE_URL}/${id}/?is_favorite=${isFavorite}`, {
+        method: 'PUT'
+      })
+      .then(res => {
+        if (res.status == 200) {
+          console.log('Favorites updated');
+        }
+      })
+      .catch(err => console.log('An error occurred during favorites PUT request', err));
+  }
 }
