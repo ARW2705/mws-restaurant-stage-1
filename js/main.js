@@ -16,12 +16,24 @@ document.addEventListener('DOMContentLoaded', (event) => {
 });
 
 window.addEventListener('load', event => {
+  // when page has finished loading, attempt to clear any queued records from idb
+  if (window.navigator.serviceWorker.controller) {
+    navigator.serviceWorker.ready
+    .then(swRegistration => {
+      if (swRegistration) {
+        navigator.serviceWorker.controller.postMessage('attempt-pending-submission');
+      }
+    });
+  }
+
   const images = document.querySelectorAll('.restaurant-img');
   const options = {
     rootMargin: '50px 0px',
     threshold: 0.01
   };
 
+  // when image would come into view within options threshold,
+  // stop observing image and load it
   const onIntersection = entries => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -35,7 +47,7 @@ window.addEventListener('load', event => {
     Array.from(images).forEach(image => loadImage(image));
   } else {
     observer = new IntersectionObserver(onIntersection, options);
-    images.forEach(image => {console.log('observing'); observer.observe(image)});
+    images.forEach(image => observer.observe(image));
   }
 });
 
@@ -199,11 +211,13 @@ window.createRestaurantHTML = (restaurant) => {
   picture.append(image);
   li.append(picture);
 
-  if (window.innerWidth < 700 && loadCount < 1)
+  // load first row of pictures (always visible on load) depending on screen size
+  const windowWidth = window.innerWidth;
+  if (windowWidth < 700 && loadCount < 1)
     loadImage(picture);
-  else if (window.innerWidth > 700 && window.innerWidth < 1024 && loadCount < 2)
+  else if (windowWidth > 700 && windowWidth < 1024 && loadCount < 2)
     loadImage(picture);
-  else if (window.innerWidth > 1024 && loadCount < 3)
+  else if (windowWidth > 1024 && loadCount < 3)
     loadImage(picture);
   loadCount++;
 
@@ -226,6 +240,7 @@ window.createRestaurantHTML = (restaurant) => {
   const more = document.createElement('a');
   more.innerHTML = 'View Details';
   more.href = DBHelper.urlForRestaurant(restaurant);
+  more.setAttribute('role', 'button');
   more.setAttribute('aria-label', `view-details for the restaurant, ${restaurant.name}`);
   actionButtonsContainer.append(more)
 
@@ -243,7 +258,8 @@ window.createRestaurantHTML = (restaurant) => {
   favorite.addEventListener('click', e => {
     e.preventDefault();
     e.target.classList.toggle('faved');
-    if (e.target.classList.contains('faved')) {
+    const faved = e.target.classList.contains('faved');
+    if (faved) {
       ariaAction = 'Remove';
       ariaPrep = 'from';
     } else {
@@ -251,7 +267,7 @@ window.createRestaurantHTML = (restaurant) => {
       ariaPrep = 'to';
     }
     favorite.setAttribute('aria-label', `${ariaAction} ${restaurant.name} ${ariaPrep} favorites`);
-    DBHelper.updateFavorites(restaurant.id, e.target.classList.contains('faved'));
+    DBHelper.updateFavorites(restaurant.id, faved);
   });
   actionButtonsContainer.append(favorite);
 
