@@ -4,10 +4,9 @@
 class DBHelper {
 
   /**
-   * Database URL.
-   * Change this to restaurants.json file location on your server.
+   * Restaurant Database URL.
    */
-  static get DATABASE_URL() {
+  static get RESTAURANT_DB_URL() {
     const port = 1337 // database server port
     return `http://localhost:${port}/restaurants`;
   }
@@ -27,7 +26,7 @@ class DBHelper {
   static fetchRestaurants(callback) {
     const fetchHeaders = new Headers();
     fetchHeaders.append('content-type', 'application/json');
-    fetch(DBHelper.DATABASE_URL, {header: fetchHeaders})
+    fetch(DBHelper.RESTAURANT_DB_URL, {header: fetchHeaders})
       .then(res => {
         res.json()
           .then(restaurants => {
@@ -245,7 +244,7 @@ class DBHelper {
       body: JSON.stringify(review)
     })
     .then(res => {
-      if (res.status == 200) {
+      if (200 <= res.status <= 201) {
         return res.json()
           .then(data => {
             return data;
@@ -289,24 +288,27 @@ class DBHelper {
       if (res.status == 200) {
         return true;
       }
+      return false;
     })
     .catch(err => console.log('An error occurred during review DELETE request', err));
   }
 
   /**
-   * Get favorited restaurants
-   */
-
-  /**
    * Update favorited restaurants
    */
   static updateFavorites(id, isFavorite) {
-      fetch(`${DBHelper.DATABASE_URL}/${id}/?is_favorite=${isFavorite}`, {
-        method: 'PUT'
+    const fetchHeaders = new Headers();
+    fetchHeaders.append('content-type', 'application/json');
+      fetch(`${DBHelper.RESTAURANT_DB_URL}/${id}/?is_favorite=${isFavorite}`, {
+        method: 'PUT',
+        header: fetchHeaders,
+        body: JSON.stringify({})
       })
       .then(res => {
         if (res.status == 200) {
           console.log('Favorites updated');
+        } else {
+          console.log('Network error while updating favorites');
         }
       })
       .catch(err => console.log('An error occurred during favorites PUT request', err));
