@@ -6,8 +6,9 @@ const cacheStatic = `${cacheBaseName}-static`;
 const cacheImages = `${cacheBaseName}-images`;
 const version = 'v1.0.0';
 let initComplete = false;
+let queueId = 0;
 
-const dbPromise = idb.open('restaurantDB', 2, upgradeDb => {
+const dbPromise = idb.open('restaurantDB', 3, upgradeDb => {
     switch(upgradeDb.oldVersion) {
       case 0:
         const store = upgradeDb.createObjectStore('restaurants', {
@@ -16,6 +17,10 @@ const dbPromise = idb.open('restaurantDB', 2, upgradeDb => {
       case 1:
         const reviewStore = upgradeDb.createObjectStore('reviews', {
           keyPath: 'id'
+        });
+      case 2:
+        const pendingQueueStore = upgradeDb.createObjectStore('pendingQueue', {
+          keyPath: 'queueId'
         });
     }
   });
@@ -73,9 +78,9 @@ const createRoutingObject = event => {
  */
 const handleDBGetRequest = (event, id) => {
   let url = event.request.url;
-  console.log(event.request);
   const parseURL = new URL(event.request.url);
   const path = parseURL.pathname.substring(1, parseURL.pathname.length);
+
   if (path == 'restaurants' && id != -1) {
     url = `${event.request.url}/${id}`;
   }
@@ -111,7 +116,7 @@ const handleDBGetRequest = (event, id) => {
       return idbRead.getAll()
         .then(response => {
           /**
-           *if id is not -1, a single record is requested,
+           * if id is not -1, a single record is requested,
            * return that record from idb if present
            */
           if ((path == 'restaurants' && id != -1) && response && response.length) return response.find(r => r.id == id);
@@ -148,56 +153,154 @@ const handleDBGetRequest = (event, id) => {
  * Continue with fetch request and send response back to caller
  */
 const handleDBChangeRequest = (event, id) => {
-  console.log(event.request);
   const parseURL = new URL(event.request.url);
-  console.log(parseURL);
-  let pathname = parseURL.pathname.substring(1, parseURL.pathname.length);
-  let path = (pathname.includes('/')) ? pathname.split('/')[0]: pathname;
-  console.log(path);
-  const queryParams = parseURL.searchParams;
-  console.log(queryParams);
   const method = event.request.method;
-  if (method == 'POST' || method == 'PUT') {
-    event.respondWith(
-      fetch(event.request)
+  let pathname = parseURL.pathname.substring(1, parseURL.pathname.length);
+  // path will be used to determine which object store to use in idb
+  let path = (pathname.includes('/')) ? pathname.split('/')[0]: pathname;
+  const queryParams = parseURL.search;
+  // clone request - original request will be consumed by idb functions
+  const networkRequest = event.request.clone();
+
+  event.respondWith(
+    dbPromise.then(db => {
+      const key = parseInt(pathname.split('/')[1]);
+      if (method == 'POST' || method == 'PUT') {
+        return event.request.json()
+          .then(body => {
+            let response = {};
+            const idbWrite = db.transaction(path, 'readwrite').objectStore(path);
+            if (queryParams != "") {
+              // PUT request to change favorites - new value in search params
+              const params = new URLSearchParams(queryParams.substring(1));
+              const faved = params.get("is_favorite");
+              // Get existing record to update
+              return idbWrite.get(key)
+                .then(record => {
+                  record.is_favorite = faved;
+                  idbWrite.put(record);
+                  response = record;
+                  response['type'] = 'PUT restaurants';
+                  return response;
+                });
+            } else {
+              // PUT request to update review
+              if (method == 'PUT') {
+                // Get existing record to update
+                return idbWrite.get(key)
+                  .then(record => {
+                    record.comments = body.comments;
+                    record.name = body.name;
+                    record.rating = body.rating;
+                    record.updatedAt = body.updatedAt;
+                    idbWrite.put(record);
+                    response = record;
+                    response['type'] = 'PUT reviews';
+                    return response;
+                });
+              // POST request to add new review
+              } else if (method == 'POST') {
+                idbWrite.put(body);
+                response = body;
+                response['type'] = 'POST reviews'
+                return response;
+              }
+            }
+          });
+      } else {
+        // DELETE review request
+        const idbWrite = db.transaction(path, 'readwrite').objectStore(path);
+        idbWrite.delete(key);
+        return {id: key, type: 'DELETE reviews'};
+      }
+    })
+    .then(data => {
+      return fetch(networkRequest)
         .then(res => {
-          console.log('handleDBChangeRequest fetch finished');
-          if ((method == 'POST' && res.status == 201) || (method == 'PUT' && res.status == 200)) {
-            return res.json()
-              .then(data => {
-                return dbPromise.then(db => {
-                  console.log('writing to idb', data);
-                  const idbWrite = db.transaction(path, 'readwrite').objectStore(path);
-                  idbWrite.put(data);
-                  return data;
-                })
-                .catch(err => console.log(`${path} idb error`, err));
-              })
-              .catch(err => console.log(`${path} post response parse error`, err));
-          } else {
-            console.log(`An error occurred during ${method} request, `, res.statusText);
-          }
+          // if there is a network response, continue using that response
+          return res;
         })
-        .then(response => new Response(JSON.stringify(response)))
-        .catch(err => console.log('reviews post request error', err))
-      );
-  } else if (method == 'DELETE') {
-    const key = pathname.split('/')[1];
-    event.respondWith(
-      fetch(event.request)
-        .then(res => {
-          if (res.status == 200) {
-            return dbPromise.then(db => {
-              const idbWrite = db.transaction(path, 'readwrite').objectStore(path);
-              idbWrite.delete(parseInt(key));
-            })
-            .catch(err => console.log('IDB deletion error', err));
-          }
+        .catch(err => {
+          // otherwise, add action to pending queue and send back the idb data
+          addToPendingQueue(data);
+          return new Response(JSON.stringify(data || {}));
         })
-        .then(response => new Response(JSON.stringify(response)))
-        .catch(err => console.log('Deletion fetch error', err))
-    )
-  }
+    })
+  )
+}
+
+/**
+ * Add fetch to network pending queue
+ */
+const addToPendingQueue = data => {
+  dbPromise.then(db => {
+    const idbWrite = db.transaction('pendingQueue', 'readwrite').objectStore('pendingQueue');
+    const requestData = data.type.split(' ');
+    // field 'type' is no longer needed and should not be submitted
+    delete data['type'];
+    const requestMethod = requestData[0];
+    const requestRoute = requestData[1];
+    const pending = {
+      queueId: queueId,
+      method: requestMethod,
+      route: requestRoute,
+      data: data
+    };
+    queueId++;
+    idbWrite.put(pending);
+  })
+}
+
+/**
+ * Entry for clearing idb backlog queue
+ */
+const getNextPending = () => {
+  attemptPendingSubmission(getNextPending);
+}
+
+/**
+ * Attempt to send any stored idb records
+ */
+const attemptPendingSubmission = cb => {
+  // check idb for queued items
+  dbPromise.then(db => {
+    const idbCursor = db.transaction('pendingQueue', 'readwrite').objectStore('pendingQueue');
+    idbCursor.openCursor().then(cursor => {
+      // stop if there are no further records
+      if (!cursor) return;
+
+      const record = cursor.value;
+      const pathname = record.route;
+      const id = record.data.id;
+      const bool = record.data.is_favorite;
+
+      // form url and create headers
+      let url = `http://localhost:1337/${pathname}`;
+      if (id !== undefined && record.method !== 'POST') url += `/${id}`;
+      if (bool !== undefined) url += `/?is_favorite=${bool}`;
+      const fetchHeaders = new Headers();
+      fetchHeaders.append('content-type', 'application/json');
+
+      // perform network fetch
+      fetch(url, {
+        method: record.method,
+        body: JSON.stringify(record.data),
+        header: fetchHeaders
+      })
+      .then(res => {
+        if (res && (res.status == 200 || res.status == 201)) {
+          // record was successfully sent to network,
+          // delete from pending queue
+          const cleanup = db.transaction('pendingQueue', 'readwrite').objectStore('pendingQueue');
+          cleanup.openCursor().then(cursor => {
+            cursor.delete()
+              .then(() => cb());
+          });
+        }
+      })
+      .catch(err => console.log('Could not sync record'))
+    })
+  })
 }
 
 /**
@@ -244,7 +347,6 @@ self.addEventListener('fetch', event => {
     if (routing.method == 'GET') {
       handleDBGetRequest(event, routing.id);
     } else {
-      console.log(`${routing.method} request made by ${routing.url}`);
       handleDBChangeRequest(event, routing.id);
     }
   } else if (routing.port == "8000" || routing.port == "3000") {
@@ -274,23 +376,12 @@ self.addEventListener('activate', event => {
 });
 
 /**
- * Handle background sync
+ * Handle message from client to service worker
  */
-self.addEventListener('sync', event => {
-  if (event.tag === 'bg-sync') {
-    console.log('sync event');
-    // event.waitUntil(
-    //   const routing = createRoutingObject(event);
-    //   handleDBChangeRequest(event, event.id);
-    // );
+self.addEventListener('message', event => {
+  if (event.data == 'attempt-pending-submission') {
+    getNextPending();
   }
-})
-
-/**
- * Handle service worker error event
- */
-self.addEventListener('error', event => {
-  console.log('SW error', event);
 });
 
 /**
