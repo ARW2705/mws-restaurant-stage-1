@@ -20,6 +20,17 @@ window.initMap = () => {
   });
 }
 
+window.addEventListener('load', event => {
+  if (window.navigator.serviceWorker.controller) {
+    navigator.serviceWorker.ready
+    .then(swRegistration => {
+      if (swRegistration) {
+        navigator.serviceWorker.controller.postMessage('attempt-pending-submission');
+      }
+    });
+  }
+});
+
 /**
  * Get current restaurant and reviews from page URL.
  */
@@ -141,7 +152,6 @@ window.fillReviewsHTML = (reviews = self.reviews) => {
     });
     container.appendChild(ul);
   }
-
   createReviewForm();
 }
 
@@ -152,11 +162,14 @@ window.createReviewForm = () => {
   const container = document.getElementById('reviews-container');
   const reviewFormContainer = document.createElement('div');
   reviewFormContainer.className = 'review-form-container';
+  reviewFormContainer.setAttribute('role', 'form');
+  reviewFormContainer.setAttribute('aria-labelledby', 'review-form');
 
   const reviewForm = document.createElement('form');
   reviewForm.id = 'review-form';
   reviewForm.name = 'review-form';
   reviewForm.setAttribute('data-db-id', '-1');
+  reviewForm.setAttribute('aria-label', 'Review');
   const title = document.createElement('h4');
   title.innerHTML = "Submit a Review";
   title.id = 'review-input-title';
@@ -173,10 +186,11 @@ window.createReviewForm = () => {
 
   const reviewerNameInput = document.createElement('input');
   reviewerNameInput.type = 'text';
-  reviewerNameInput.name = 'reviewer-name';
+  reviewerNameInput.name = 'reviewer-name-input';
   reviewerNameInput.id = 'reviewer-name';
-  reviewerNameInput.placeholder = 'Enter your name here';
-  reviewerNameInput.addEventListener('change', e => {
+  reviewerNameInput.placeholder = 'Enter your name';
+  reviewerNameInput.setAttribute('aria-required', 'true');
+  reviewerNameInput.addEventListener('keyup', e => {
     e.preventDefault();
     checkFormValidation();
   });
@@ -191,7 +205,6 @@ window.createReviewForm = () => {
 
   const ratingSliderLabel = document.createElement('label');
   ratingSliderLabel.for = 'rating-slider';
-  // ratingSliderLabel.innerHTML = "Your rating: ✰ ✰ ✰ ✰ ✰";
   ratingSliderLabel.innerHTML = 'Your rating ';
   ratingSliderLabel.id = 'rating-slider-label';
   const starRating = document.createElement('span');
@@ -208,9 +221,15 @@ window.createReviewForm = () => {
   ratingSlider.step = 1;
   ratingSlider.name = 'rating';
   ratingSlider.id = 'rating';
+  ratingSlider.setAttribute('role', 'slider');
+  ratingSlider.setAttribute('aria-labelledby', 'rating-slider-label');
+  ratingSlider.setAttribute('aria-valuemin', 1);
+  ratingSlider.setAttribute('aria-valuemax', 5);
+  ratingSlider.setAttribute('aria-valuenow', 5);
   ratingSlider.addEventListener('change', e => {
     e.preventDefault();
     const ratingLabel = document.getElementById('slider-value');
+    ratingSlider.setAttribute('aria-valuenow', e.target.value);
     ratingLabel.innerHTML = "★".repeat(e.target.value);
   });
   ratingSliderContainer.appendChild(ratingSlider);
@@ -229,8 +248,10 @@ window.createReviewForm = () => {
   const reviewTextInput = document.createElement('textarea');
   reviewTextInput.name = 'comments';
   reviewTextInput.id = 'review-body';
-  reviewTextInput.placeholder = 'Enter your comments here';
-  reviewTextInput.addEventListener('change', e => {
+  reviewTextInput.placeholder = 'Enter your comments';
+  reviewTextInput.setAttribute('aria-label', 'Enter your comments');
+  reviewTextInput.setAttribute('aria-required', 'true');
+  reviewTextInput.addEventListener('keyup', e => {
     e.preventDefault();
     checkFormValidation();
   });
@@ -246,6 +267,7 @@ window.createReviewForm = () => {
   const deleteReviewButton = document.createElement('button');
   deleteReviewButton.innerHTML = 'Remove';
   deleteReviewButton.id = 'review-delete-button';
+  deleteReviewButton.setAttribute('aria-label', 'Delete review');
   deleteReviewButton.addEventListener('click', e => {
     e.preventDefault();
     const _form = document.getElementById('review-form');
@@ -259,6 +281,7 @@ window.createReviewForm = () => {
   formSubmitButton.innerHTML = 'Submit';
   formSubmitButton.id = 'review-submit-button';
   formSubmitButton.disabled = true;
+  formSubmitButton.setAttribute('aria-label', 'Submit review');
   formSubmitButton.addEventListener('click', e => {
     e.preventDefault();
     handleReviewSubmission();
@@ -273,7 +296,7 @@ window.createReviewForm = () => {
 
 /**
  * Transfer information from posted review into review form
- * in order to make edits
+ * in order to make edits or delete entire review
  */
 window.populateReviewForm = elem => {
   const title = document.getElementById('review-input-title');
@@ -291,8 +314,6 @@ window.populateReviewForm = elem => {
   const ratingLabel = document.getElementById('slider-value');
   ratingLabel.innerHTML = '★'.repeat(rating);
   form.setAttribute('data-db-id', id);
-  const submitButton = document.getElementById('review-submit-button');
-  submitButton.innerHTML = 'Edit';
   const deleteButton = document.getElementById('review-delete-button');
   deleteButton.style.display = 'inline-block';
   checkFormValidation();
@@ -318,14 +339,18 @@ window.handleReviewSubmission = () => {
   const name = form['reviewer-name'].value;
   const rating = parseInt(form['rating'].value);
   const comments = form['review-body'].value;
+  const current = Date.now();
   const review = {
+    "id": (id != -1) ? parseInt(id): current,
     "restaurant_id": self.restaurant.id,
     "name": name,
     "rating": rating,
-    "comments": comments
+    "comments": comments,
+    "updatedAt": current
   };
-  // if an id greater than 0 was specified, a review is being updated
+  // if an id other than -1 was specified, a review is being updated
   if (id != -1) {
+    // review["updatedAt"] = current;
     const update = DBHelper.updateReview(id, review);
     update.then(_update => {
       if (_update) {
@@ -336,6 +361,8 @@ window.handleReviewSubmission = () => {
     })
   // otherwise a new review is being created
   } else {
+    review["createdAt"] = current;
+    // review["updatedAt"] = current;
     const newReview = DBHelper.addNewReview(review);
     newReview.then(_newReview => {
       if (_newReview) {
@@ -366,14 +393,16 @@ window.removeReview = id => {
 window.updateReviewHTML = (amountChanged, review) => {
   const reviews = document.getElementById('reviews-list');
   switch (amountChanged) {
-    case -1: // a review was deleted
+    case -1: // a review was deleted, scroll to top of reviews list after deletion
       for (let i=0; i < reviews.children.length; i++) {
         if (reviews.children[i].getAttribute('data-db-id') == review) {
           reviews.removeChild(reviews.children[i]);
+          const reviewsTop = document.getElementById('reviews-list');
+          reviewsTop.scrollIntoView(false);
         }
       }
       break;
-    case 0: // review was updated, no change in amount
+    case 0: // review was updated, no change in amount, scroll to updated review
       for (let i=0; i < reviews.children.length; i++) {
         const child = reviews.children[i];
         if (child.getAttribute('data-db-id') == review.id) {
@@ -382,12 +411,19 @@ window.updateReviewHTML = (amountChanged, review) => {
           ps[1].innerHTML = 'Rating: ' + '★'.repeat(review.rating);
           child.getElementsByTagName('article')[0].innerHTML = review.comments;
           child.getElementsByTagName('time')[0].innerHTML = getFormattedTimestamp(review.updatedAt);
+          child.scrollIntoView(false);
+          const reviewBtn = document.getElementById(`edit-btn-${review.id}`);
+          reviewBtn.focus();
           break;
         }
       }
       break;
-    case 1: // a review was added
+    case 1: // a review was added, scroll to new review
       reviews.appendChild(createReviewHTML(review));
+      const newReview = document.getElementById(`index-${review.id}`);
+      const reviewBtn = document.getElementById(`edit-btn-${review.id}`);
+      newReview.scrollIntoView(false);
+      reviewBtn.focus();
       break;
     default:
       break;
@@ -395,13 +431,20 @@ window.updateReviewHTML = (amountChanged, review) => {
 }
 
 /**
- * Clear form fields and change title
+ * Clear form fields and change title to 'submit a review'
  */
 window.resetReviewForm = () => {
   const title = document.getElementById('review-input-title');
   title.innerHTML = 'Submit a Review';
   const form = document.getElementById('review-form');
   form.reset();
+  form['rating'].value = 5;
+  const ratingLabel = document.getElementById('slider-value');
+  ratingLabel.innerHTML = '★★★★★';
+  form.setAttribute('data-db-id', '-1');
+  const deleteButton = document.getElementById('review-delete-button');
+  deleteButton.style.display = 'none';
+  checkFormValidation();
 }
 
 /**
@@ -413,6 +456,7 @@ window.createReviewHTML = (review) => {
 
   const cardHeader = document.createElement('div');
   cardHeader.className = 'review-card-header';
+  cardHeader.id = `index-${review.id}`;
   const cardBody = document.createElement('div');
   cardBody.className = 'review-card-body';
 
@@ -430,14 +474,20 @@ window.createReviewHTML = (review) => {
   rating.innerHTML = `Rating: ${'★'.repeat(review.rating)}`;
   cardBody.appendChild(rating);
 
-  const editButton = document.createElement('a');
+  const editButton = document.createElement('button');
   editButton.innerHTML = '✎';
-  editButton.id = 'review-edit-button';
-  editButton.href = '#review-form';
+  editButton.className = 'review-edit-button';
+  editButton.id = `edit-btn-${review.id}`;
+  editButton.setAttribute('aria-label', `Edit or delete review for ${review.name}`);
   editButton.addEventListener('click', e => {
+    e.preventDefault();
     const elem = e.target.closest('li');
     populateReviewForm(elem);
-  });
+    const form = document.getElementById('review-form');
+    const firstField = document.getElementById('reviewer-name');
+    firstField.focus();
+    form.scrollIntoView();
+  })
   cardBody.appendChild(editButton);
 
   const comments = document.createElement('article');
